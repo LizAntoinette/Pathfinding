@@ -10,7 +10,7 @@ export function astar(grid, startNode, finishNode, size, heuristic) {
 
   openlist.push(startNode);
 
-  while (!!openlist.length) {
+  while (openlist.length > 0) {
     openlist.sort((a, b) => a.cost.F - b.cost.F);
     const current = openlist.shift();
 
@@ -31,7 +31,8 @@ export function astar(grid, startNode, finishNode, size, heuristic) {
       nNode.cost.H = hNode.hval;
       //Addition of the node heuristics and distance cost
       nNode.cost.F = nNode.cost.G + nNode.cost.H;
-
+      console.log("equations:");
+      console.log( nNode.cost.G +" + "+ nNode.cost.H+" = "+ nNode.cost.F )
       if (!openlist.includes(nNode)) {
         nNode.previousNode = current;
         openlist.push(nNode);

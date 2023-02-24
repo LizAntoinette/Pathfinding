@@ -8,7 +8,38 @@
   overflow: hidden;
 }
 
+body{
+  background:  #545b62;
+}
 
+#my-table {
+  border-collapse: collapse;
+  border: 1.5px solid black;
+}
+
+#my-table th, #my-table td {
+  border: 1px solid black;
+  font-size: 12px;
+  width: 3%;
+}
+
+#stackTable {
+  border-collapse: collapse;
+  border: 1.5px solid black;
+}
+
+.stack {
+  border: 1px solid black;
+  font-size: 12px;
+  padding: 4px;
+}
+
+
+.play-button{
+  font-size: 14px !important;
+  padding: 5px;
+  border-radius: 20px;
+}
 .grid-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -20,8 +51,21 @@
     "button-div4 button-div4"
     "button-div5 button-div6"
     "button-div7 button-div7"
+    "button-div10 button-div10"
     "button-div8 button-div8"
     "button-div9 button-div9";
+}
+
+.bg-color-cell {
+  background-color: #ffe7d3;
+}
+
+.box-top {
+  display: flex;
+  align-items: center;
+}
+.push-top {
+    margin-left: auto;
 }
 
 .button-div1 { grid-area: button-div1; }
@@ -68,7 +112,7 @@
   div.content {margin-left: 0;}
 }
 
-@media (min-width: 576px){}
+@media (min-width: 576px){
 .form-inline .input-group, .form-inline .custom-select {
     width:100%;
   }

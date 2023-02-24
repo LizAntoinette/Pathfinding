@@ -4,8 +4,9 @@ export function dfs(grid, startNode, finishNode, size) {
 
   startNode.isVisited = true;
   stack.push(startNode);
+  visitedNodesInOrder.push(startNode);
 
-  while (!!stack.length) {
+  while (stack.length>0) {
       let node = stack.pop();
 
       if (finishNode === node.point2)
@@ -35,18 +36,24 @@ function calculatePath(finishNode) {
   return shortestPathNodes;
 }
 
+
+  
 function getAllNeighbors(grid, node, size) {
 
-    const neighbors = [];
-    const point2 = node.point2;
-     
-    for(let i=0; i <size; i++){
-      var tempNode = grid[point2][i]; 
-      if((!tempNode.isVisited) && tempNode.distance > 0){
-          grid[i][point2].isVisited = true;
-          neighbors.push(tempNode);
-      }
+  const neighbors = [];
+  const point2 = node.point2;
+    
+  for(let i=0; i <size; i++){
+    var tempNode = grid[point2][i]; 
+    if((!(tempNode.isVisited && grid[i][point2].isVisited)) && tempNode.distance > 0){
+        neighbors.push(tempNode);
+        for(let j=0; j <size; j++){
+          grid[i][j].isVisited = true;
+        }
     }
-     return neighbors;
+    
   }
+
+    return neighbors;
+}
   

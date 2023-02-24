@@ -11,10 +11,11 @@ import 'bootstrap-vue/dist/bootstrap-vue.css'
 Vue.use(BootstrapVue)
 // Optionally install the BootstrapVue icon components plugin
 Vue.use(IconsPlugin)
-Vue.use(VueKonva)
+
 require('@/assets/css/style.css');
 Vue.config.productionTip = false;
 
+Vue.use(VueKonva);
 new Vue({
   render: h => h(App)
 }).$mount("#app");
