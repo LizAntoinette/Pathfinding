@@ -5,26 +5,26 @@
         <h1> Visualizer</h1>
         <div class="grid-container mx-4 mt-3">
           <div class="button-div1 mx-3">
-             <b-dropdown block class="ml-2 algobtn " :text="selectedItem" v-model="selectedItem">
+             <b-dropdown block class="ml-2 algobtn " :text="selectedItem" v-model="selectedItem" >
                 <b-dropdown-header id="unweighted">
                   Unweighted
                 </b-dropdown-header>
-                <b-dropdown-item-button @click="selectedItem = 'BFS'"  aria-describedby="unweighted">
+                <b-dropdown-item-button :key="'BFS'" @click="onclickDrop('BFS')"  aria-describedby="unweighted">
                   BFS
                 </b-dropdown-item-button>
-                <b-dropdown-item-button @click="selectedItem = 'DFS'"  aria-describedby="unweighted">
+                <b-dropdown-item-button :key="'DFS'" @click="onclickDrop('DFS')"  aria-describedby="unweighted" >
                   DFS
                 </b-dropdown-item-button>
                 <b-dropdown-header id="weighted">
                   Weighted
                 </b-dropdown-header>
-                <b-dropdown-item-button @click="selectedItem = 'Uniform Cost'"  aria-describedby="unweighted">
+                <b-dropdown-item-button :key="'Uniform Cost'" @click="onclickDrop('Uniform Cost')"  aria-describedby="unweighted">
                   Uniform Cost
                 </b-dropdown-item-button>
-                <b-dropdown-item-button @click="selectedItem = 'Greedy BFS'"  aria-describedby="unweighted">
+                <b-dropdown-item-button :key="'Greedy BFS'" @click="onclickDrop('Greedy BFS')"  aria-describedby="unweighted">
                   Greedy BFS
                 </b-dropdown-item-button>
-                <b-dropdown-item-button @click="selectedItem = 'A*'"  aria-describedby="unweighted">
+                <b-dropdown-item-button :key="'A*'" @click="onclickDrop('A*')"  aria-describedby="unweighted">
                   A*
                 </b-dropdown-item-button>
               
@@ -175,7 +175,7 @@
                        <!-- <button :disabled="disablePath" @click="getShortPath" class="btn btn-outline-secondary rounded-circle play-button">Get Path</button> -->
                     </div>
                     
-                    <div>
+                    <div v-if="selectedItem ==='BFS' || selectedItem ==='DFS'">
                       <div class="row">
                         
                         <p>Adjacency Matrix</p>
@@ -189,40 +189,60 @@
                             </tr>
                           </tbody>
                         </table>
-                      <div class="row mt-3" id="distance-list">
+                      <div class="row mt-3" id="distance-list" >
                         <div class="ml-1">
                         
-                          <p>Queue</p>
+                          <p>{{ labelResult }}</p>
                           
                         </div>
                        
-                        <table  class=" mt-4">
+                        <table  class=" mt-4" id="resTable">
                           
                           <tbody>
                             <tr>
-                              <td class="stack" v-for="cell in listNodes"  :key="cell">{{ cell }}</td>
+                              <td v-if="listNodesFrom.length !=0" class="stack">From</td>
+                              <td class="stack" v-for="from in listNodesFrom"  :key="from">{{ from }}</td>
+                              <!-- <td v-for="(item, index) in listNodes" :key="item.id">{{ cell }}</td> -->
+                            </tr>
+                            <tr>
+                              <td v-if="listNodesTo.length !=0" class="stack">To</td>
+                              <td class="stack" v-for="toNode in listNodesTo"  :key="toNode">{{ toNode }}</td>
                               <!-- <td v-for="(item, index) in listNodes" :key="item.id">{{ cell }}</td> -->
                             </tr>
                           </tbody>
                         </table>
                       </div>
-                      <div class="row mt-3" id="distance-list">
+                      <div class="row mt-3" id="distance-list" >
                         <div class="ml-1">
                         
                         <p>Output</p>
                         
                        </div>
 
-                        <table  class=" mt-4">
+                        <table  class=" mt-4" >
                           
                           <tbody>
                             <tr>
-                              <td class="stack" v-for="cell in outputNodes"  :key="cell">{{ cell }}</td>
+                              <td v-if="outputNodesFrom.length !=0" class="stack">To</td>
+                              <td class="stack" v-for="fromNodes in outputNodesFrom"  :key="fromNodes">{{ fromNodes }}</td>
                               <!-- <td v-for="(item, index) in listNodes" :key="item.id">{{ cell }}</td> -->
                             </tr>
+                            <tr>
+                              <td v-if="outputNodesTo.length !=0" class="stack">From</td>
+                              <td class="stack" v-for="toNodes in outputNodesTo"  :key="toNodes">{{ toNodes }}</td>
+                              <!-- <td v-for="(item, index) in listNodes" :key="item.id">{{ cell }}</td> -->
+                            </tr>
+                            
                           </tbody>
                         </table>
                       </div>
+                    </div>
+
+                    <div  v-if="!(selectedItem ==='BFS' || selectedItem ==='DFS')">
+                      <v-stage ref="stageTree" :config="stageConfigTree">
+                        <v-layer ref="layerTree">
+                        </v-layer>
+                      </v-stage>
                     </div>
                 </b-card>
 
@@ -279,8 +299,24 @@ export default {
       visitedCount: 0,
       visitedNodesInOrder: null, 
       calculatedPath: null,
-      listNodes: [],
-      outputNodes: []
+      listNodesFrom: [],
+      listNodesTo: [],
+      outputNodesFrom: [],
+      outputNodesTo: [],
+      labelResult:'Details',
+      stageConfigTree: {
+        width:100,
+        height: 100
+      },
+      nodes: [
+        { id: 1, name: 'Root', x: 50, y: 50 },
+        { id: 2, name: 'Child 1', x: 200, y: 50 },
+        { id: 3, name: 'Child 2', x: 200, y: 150 }
+      ],
+      edges: [
+        { from: 1, to: 2 },
+        { from: 1, to: 3 }
+      ]
     };
   },
   created: function() {
@@ -355,7 +391,43 @@ export default {
 
   
   methods: {
+    addNodes() {
+      this.nodes.forEach(node => {
+        const rect = new Rect({
+          x: node.x,
+          y: node.y,
+          width: 100,
+          height: 50,
+          fill: 'white',
+          stroke: 'black',
+          strokeWidth: 1,
+          draggable: true
+        })
+        const text = new Text({
+          x: node.x + 10,
+          y: node.y + 10,
+          text: node.name,
+          fontSize: 16,
+          fill: 'black'
+        })
+        rect.add(text)
+        this.$refs.layer.getStage().add(rect)
+      })
+    },
     
+    onclickDrop(option){
+      this.selectedItem = option;
+      console.log("onchange")
+      if(this.selectedItem.trim() === "BFS"){
+        this.labelResult = "Queue";
+        console.log("this works for queue")
+        
+      }
+      else if(this.selectedItem.trim() === "DFS"){
+        this.labelResult = "Stack";
+        
+      }
+    },
     addingConnection() {
       this.connection = !this.connection;
       this.vertex = false;
@@ -693,37 +765,69 @@ export default {
         if(this.selectedItem ==="BFS"){
           let item = null;
           const node = this.visitedNodesInOrder[this.visitedCount];
-          // if(this.listNodes.includes(node.point1)){
-          //   item = this.listNodes.shift();
+          // if(this.listNodesTo.includes(node.point1)){
+          //   item = this.listNodesTo.shift();
           //   this.outputNodes.push(item);
           // }
-          this.listNodes.push(node.point2);
-          
-         
+          this.listNodesFrom.push(node.point1);
+          this.listNodesTo.push(node.point2);
+        }
 
+        if(this.selectedItem ==="DFS"){
+          let item = null;
+          const node = this.visitedNodesInOrder[this.visitedCount];
+          // if(this.listNodesTo.includes(node.point1)){
+          //   item = this.listNodesTo.shift();
+          //   this.outputNodes.push(item);
+          // }
+          this.listNodesFrom.push(node.point1);
+          this.listNodesTo.push(node.point2);
         }
         
       }
-      if(this.visitedCount > 1)
+      if(this.visitedCount >= 1)
         this.cantPlayPrev = false;
-      if(this.visitedCount >= this.visitedNodesInOrder.length-1){
+      if(this.visitedCount == this.visitedNodesInOrder.length-1){
         this.cantPlayNext = true;
         this.cantrunShortPath = false;
-
       }
       
         
       
     },
     prev(){
-      if((this.visitedCount-1) >= 1){
+      if((this.visitedCount-1) >= 0){
         this.undoColorNode();
         this.visitedCount -= 1;
+        //adding stack table
+        if(this.selectedItem ==="BFS"){
+          let item = null;
+          const node = this.visitedNodesInOrder[this.visitedCount];
+          // if(this.listNodesTo.includes(node.point1)){
+          //   item = this.listNodesTo.shift();
+          //   this.outputNodes.push(item);
+          // }
+          this.listNodesFrom.pop(node.point1);
+          this.listNodesTo.pop(node.point2);
+        }
+
+        if(this.selectedItem ==="DFS"){
+          let item = null;
+          const node = this.visitedNodesInOrder[this.visitedCount];
+          // if(this.listNodesTo.includes(node.point1)){
+          //   item = this.listNodesTo.shift();
+          //   this.outputNodes.pop(item);
+          // }
+          this.listNodesFrom.pop(node.point1);
+          this.listNodesTo.pop(node.point2);
+        }
+
       }
-      if(this.visitedCount <= 1)
+      if(this.visitedCount == 0)
         this.cantPlayPrev = true;
 
       if(this.visitedCount < this.visitedNodesInOrder.length-1){
+        this.cantPlayNext = false;
         this.cantrunShortPath = true;
 
       }
@@ -890,7 +994,32 @@ export default {
   },
   getPath(){
     this.cantPlayPrev = false;
-    for (let i = 1; i < this.calculatedPath.length; i++) {
+    var table = document.getElementById("resTable");
+
+    // Get an array of all the td elements in the table
+    var tds = table.getElementsByTagName("td");
+
+   
+    for (let i = this.calculatedPath.length-1; i >= 1; i--) {
+      let node = this.calculatedPath[i];
+      
+      this.outputNodesFrom.push(node.point1);
+      this.outputNodesTo.push(node.point2);
+
+      if(this.selectedItem ==="BFS"){
+        let resIndex = this.listNodesFrom.indexOf(node.point1)+1;
+        table.rows[0].cells[resIndex].style.backgroundColor = "#ed4255";
+        table.rows[1].cells[resIndex].style.backgroundColor = "#ed4255";
+      }
+      if(this.selectedItem ==="DFS"){
+        let resIndex = this.listNodesTo.indexOf(node.point2)+1;
+        table.rows[0].cells[resIndex].style.backgroundColor = "#ed4255";
+        table.rows[1].cells[resIndex].style.backgroundColor = "#ed4255";
+      }
+       
+    }
+
+    for (let i = this.calculatedPath.length-1; i >= 1; i--) {
           
           setTimeout(() => {
                 this.colorNode(this.calculatedPath[i], "#ed4255");
