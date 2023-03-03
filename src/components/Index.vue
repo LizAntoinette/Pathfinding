@@ -140,26 +140,26 @@
                         id:'circle'+index
                       }"
                     ></v-circle>
-            <v-text
-              v-for="(item, index) in list"
-              :key="item.id"
-              :config="{
-                x: item.x + 11,
-                y: item.y + 11,
-                text: index,
-                fontSize: 15,
-                width: 300,
-              }" 
-            ></v-text>
-            <v-text
-              v-for="label in distances"
-              :key="label.id"
-              :config="{
-                x: label.x,
-                y: label.y,
-                text: label.distance,
-              }"
-            />
+                  <v-text
+                    v-for="(item, index) in list"
+                    :key="item.id"
+                    :config="{
+                      x: item.x + 11,
+                      y: item.y + 11,
+                      text: index,
+                      fontSize: 15,
+                      width: 300,
+                    }" 
+                  ></v-text>
+                  <v-text
+                    v-for="label in distances"
+                    :key="label.id"
+                    :config="{
+                      x: label.x,
+                      y: label.y,
+                      text: label.distance,
+                    }"
+                  />
             <p class="text-left">Click Vertex button and click here to add vertex</p>
             <!-- <v-text :key="label_txt" :config="{ text: 'Click Vertex button and click here to add vertex'}"/> -->
                   </v-layer>
@@ -241,6 +241,97 @@
                     <div  v-if="!(selectedItem ==='BFS' || selectedItem ==='DFS')">
                       <v-stage ref="stageTree" :config="stageConfigTree">
                         <v-layer ref="layerTree">
+                                <v-arrow
+                                  v-for="line in arrows"
+                                  :key="'arr'+line.id"
+                                  :config="{
+                                    stroke: 'black',
+                                    points: [nodes[line.point1].x,nodes[line.point1].y, nodes[line.point2].x-5, nodes[line.point2].y],
+                                    id: line.id
+                                    
+                                  }"
+                                />
+                                <v-group
+                                  v-for="(item, index) in nodes"
+                                  :key="'node'+item.id"
+                                  :config="{
+                                    // x: item.x -150,
+                                    // y: item.y -20,
+                                    draggable: true ,
+                                  }"
+                                  >
+                                  <v-ellipse
+                                    :key="'node' + item.id"
+                                    :config="{
+                                      x: item.x,
+                                      y: item.y,
+                                      
+                                      radiusY: 10,
+                                      radiusX: 20,
+                                      fill: 'black',
+                                      //draggable:true,
+                                     
+                                      stroke: 'black',
+                                      strokeWidth: 1,
+                                      id:'circleTree'+index
+                                    }"
+                                  ></v-ellipse>
+                                <v-text
+                                  :config="{
+                                    text: index,
+                                    x: item.x-5,
+                                    y: item.y-5,
+                                    text: index,
+                                    fontSize: 15,
+                                    fill:'white',
+                                    width: 300
+                                  }"
+                                ></v-text>
+                                <v-text
+                                  :config="{
+                                    text: index,
+                                    x: item.x-5,
+                                    y: item.y+12,
+                                    text: index,
+                                    fontSize: 15,
+                                    fill:'black',
+                                    width: 300
+                                  }"
+                                ></v-text>
+                              </v-group>  
+
+                              <!-- <v-ellipse
+                                
+                                v-for="(item, index) in nodes"
+                                :key="item.id"
+
+                                :config="{
+                                  x: item.x,
+                                  y: item.y,
+                                  
+                                  radiusY: 10,
+                                  radiusX: 20,
+                                  fill: 'black',
+                                  //draggable:true,
+                                  draggable: true ,
+                                  stroke: 'black',
+                                  strokeWidth: 1,
+                                  id:'circleTree'+index
+                                }"
+                              ></v-ellipse>
+                            <v-text
+                              v-for="(item, index) in nodes"
+                              :key="item.id+'txt'"
+                              :config="{
+                                x: item.x-5,
+                                y: item.y-5,
+                                text: index,
+                                fontSize: 15,
+                                fill:'white',
+                                width: 300
+
+                              }" 
+                            ></v-text> -->
                         </v-layer>
                       </v-stage>
                     </div>
@@ -305,18 +396,26 @@ export default {
       outputNodesTo: [],
       labelResult:'Details',
       stageConfigTree: {
-        width:100,
-        height: 100
+        width:300,
+        height: 450
       },
       nodes: [
-        { id: 1, name: 'Root', x: 50, y: 50 },
-        { id: 2, name: 'Child 1', x: 200, y: 50 },
-        { id: 3, name: 'Child 2', x: 200, y: 150 }
+        { id: 1, name: 'Root', x: 150, y: 20 },
+        { id: 2, name: 'Child 1', x: 55, y: 70 },
+        { id: 3, name: 'Child 2', x: 110  , y: 70},
+        { id: 4, name: 'Child 2', x: 165 , y: 70 },
+        { id: 5, name: 'Child 2', x: 220 , y: 70 },
+        { id: 6, name: 'grandchild 1', x: 40, y: 120 },
+        { id: 7, name: 'grandchild 2', x: 80  , y: 120},
+        { id: 8, name: 'grandchild 2', x: 120 , y: 120 },
+        { id: 9, name: 'grandchild 2', x: 160 , y: 120 }
       ],
-      edges: [
-        { from: 1, to: 2 },
-        { from: 1, to: 3 }
+      arrows:[
+        { id: 1, point1: 0 , point2: 2},
+        { id: 2, point1: 0 , point2: 3},
+        { id: 3, point1: 0 , point2: 4},
       ]
+     
     };
   },
   created: function() {
@@ -391,29 +490,7 @@ export default {
 
   
   methods: {
-    addNodes() {
-      this.nodes.forEach(node => {
-        const rect = new Rect({
-          x: node.x,
-          y: node.y,
-          width: 100,
-          height: 50,
-          fill: 'white',
-          stroke: 'black',
-          strokeWidth: 1,
-          draggable: true
-        })
-        const text = new Text({
-          x: node.x + 10,
-          y: node.y + 10,
-          text: node.name,
-          fontSize: 16,
-          fill: 'black'
-        })
-        rect.add(text)
-        this.$refs.layer.getStage().add(rect)
-      })
-    },
+    
     
     onclickDrop(option){
       this.selectedItem = option;
