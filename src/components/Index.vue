@@ -922,9 +922,15 @@ export default {
 
             // Set the content of the cells
             cell1.textContent = node.point2;
+            cell1.style.border = '1px solid gray';
             cell2.textContent = (node.cost.H).toFixed(2);
+            cell2.style.border = '1px solid gray';
+            cell2.style.padding = '0px 8px';
             cell3.textContent = (node.cost.G).toFixed(2);
+            cell3.style.border = '1px solid gray';
+            cell3.style.padding = '0px 8px';
             cell4.textContent = (node.cost.F).toFixed(2);
+            cell4.style.border = '1px solid gray';
         }
         
       }
@@ -963,6 +969,16 @@ export default {
           // }
           this.listNodesFrom.pop(node.point1);
           this.listNodesTo.pop(node.point2);
+        }
+
+        if(this.selectedItem == "A*"){
+          var table = document.getElementById("astartable");
+
+          // Get the index of the last row
+          var lastRowIndex = table.rows.length - 1;
+
+          // Delete the last row
+          table.deleteRow(lastRowIndex);
         }
 
       }
@@ -1195,11 +1211,15 @@ export default {
        const heuristic = this.createHeuristic(GOALNODE);
        console.log("the heuristic chuchu")
        console.log(heuristic)
+       console.log("the distance bet us")
+       console.log(this.distances);
 
       const myDiv = document.getElementById('astar');
 
         // Create a new table element
       const myTable = document.createElement('table');
+      
+
 
       // Create a header row
       const headerRow = myTable.insertRow();
@@ -1214,8 +1234,10 @@ export default {
         const cell1 = row.insertCell();
         const cell2 = row.insertCell();
         cell1.textContent = item.node;
-        cell2.textContent = item.hval;
-      
+        cell1.style.border = '1px solid gray';
+        cell2.textContent = (item.hval).toFixed(2);
+        cell2.style.border = '1px solid gray';
+        cell2.style.padding = '3px 10px';
 
       }
 
@@ -1223,6 +1245,7 @@ export default {
       myDiv.appendChild(myTable);
 
       const otherTable = document.createElement('table');
+      otherTable.setAttribute('id', 'astartable');
       // Create a header row
       const headerRowo = otherTable.insertRow();
       const headerCell1o = headerRowo.insertCell();
@@ -1239,7 +1262,7 @@ export default {
 
       myDiv.appendChild(otherTable);
 
-       return astar(this.grid, STARTNODE, GOALNODE, size, heuristic );
+       return astar(this.grid, STARTNODE, GOALNODE, size, heuristic, this.distances);
 
     },
     visualizeGreedyBFS(){
