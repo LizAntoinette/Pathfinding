@@ -12,7 +12,7 @@ export function greedyBFS(grid, startNode, finishNode, size, heuristic) {
   openlist.push(startNode);
 
   while (openlist.length>0) {
-    openlist.sort((a, b) => a.cost.F - b.cost.F);
+    openlist.sort((a, b) => a.cost.H - b.cost.H);
     const current = openlist.shift();
 
     closedlist.push(current);

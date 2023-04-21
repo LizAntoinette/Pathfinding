@@ -170,11 +170,13 @@
                     <div class="row box-top">
 
                        <h4>Graph Details</h4>
-                       <button :disabled="cantPlayPrev" @click="prev"  class="btn btn-outline-secondary rounded-circle play-button push-top mr-2"> prev</button>
+                       <button :disabled="cantPlayPrev" @click="prev" class="btn btn-outline-secondary rounded-circle play-button push-top mr-2"> prev</button>
                        <button :disabled="cantPlayNext" @click="next" class="btn btn-outline-secondary rounded-circle play-button mr-3">next</button>
                        <!-- <button :disabled="disablePath" @click="getShortPath" class="btn btn-outline-secondary rounded-circle play-button">Get Path</button> -->
                     </div>
                     
+                    <div id="heuristic"></div>
+                    <div id="astar"></div>
                     <div v-if="selectedItem ==='BFS' || selectedItem ==='DFS'">
                       <div class="row">
                         
@@ -241,30 +243,33 @@
                     <div  v-if="!(selectedItem ==='BFS' || selectedItem ==='DFS')">
                       <v-stage ref="stageTree" :config="stageConfigTree">
                         <v-layer ref="layerTree">
-                                <v-arrow
+                                <v-line
                                   v-for="line in arrows"
-                                  :key="'arr'+line.id"
+                                  :key="'arr-'+line.id"
                                   :config="{
                                     stroke: 'black',
-                                    points: [nodes[line.point1].x,nodes[line.point1].y, nodes[line.point2].x-5, nodes[line.point2].y],
-                                    id: line.id
+                                    points: [nodes[line.point1].x,nodes[line.point1].y, nodes[line.point2].x, nodes[line.point2].y],
+                                    id: 'arr-'+line.id
                                     
                                   }"
                                 />
                                 <v-group
                                   v-for="(item, index) in nodes"
-                                  :key="'node'+item.id"
+                                  :key="item.id"
+                                  :id="'circleTree-'+index"
+                                  @dragmove="handleDragMove"
                                   :config="{
-                                    // x: item.x -150,
-                                    // y: item.y -20,
-                                    draggable: true ,
+                                    x: item.x ,
+                                    y: item.y,
+                                    draggable: true,
+                                    
                                   }"
                                   >
                                   <v-ellipse
                                     :key="'node' + item.id"
                                     :config="{
-                                      x: item.x,
-                                      y: item.y,
+                                      x: 0,
+                                      y: 0,
                                       
                                       radiusY: 10,
                                       radiusX: 20,
@@ -273,14 +278,14 @@
                                      
                                       stroke: 'black',
                                       strokeWidth: 1,
-                                      id:'circleTree'+index
+                                      id:'ellipse'+index
                                     }"
                                   ></v-ellipse>
                                 <v-text
                                   :config="{
                                     text: index,
-                                    x: item.x-5,
-                                    y: item.y-5,
+                                    x: 0-5,
+                                    y: 0-5,
                                     text: index,
                                     fontSize: 15,
                                     fill:'white',
@@ -290,8 +295,8 @@
                                 <v-text
                                   :config="{
                                     text: index,
-                                    x: item.x-5,
-                                    y: item.y+12,
+                                    x: 0-5,
+                                    y: 0+12,
                                     text: index,
                                     fontSize: 15,
                                     fill:'black',
@@ -348,6 +353,7 @@
   
 </template>
 <script>
+import { Layer } from 'vue-konva';
 import Konva from "konva";
 import {bfs} from '../algorithms/breadthFirstSearch';
 import {dfs} from '../algorithms/depthFirstSearch';
@@ -400,21 +406,27 @@ export default {
         height: 450
       },
       nodes: [
-        { id: 1, name: 'Root', x: 150, y: 20 },
-        { id: 2, name: 'Child 1', x: 55, y: 70 },
-        { id: 3, name: 'Child 2', x: 110  , y: 70},
-        { id: 4, name: 'Child 2', x: 165 , y: 70 },
-        { id: 5, name: 'Child 2', x: 220 , y: 70 },
-        { id: 6, name: 'grandchild 1', x: 40, y: 120 },
-        { id: 7, name: 'grandchild 2', x: 80  , y: 120},
-        { id: 8, name: 'grandchild 2', x: 120 , y: 120 },
-        { id: 9, name: 'grandchild 2', x: 160 , y: 120 }
+        // { id: 0, name: 'Root', x: 150, y: 20 },
       ],
       arrows:[
-        { id: 1, point1: 0 , point2: 2},
-        { id: 2, point1: 0 , point2: 3},
-        { id: 3, point1: 0 , point2: 4},
+
       ]
+      // nodes: [
+      //   { id: 1, name: 'Root', x: 150, y: 20 },
+      //   { id: 2, name: 'Child 1', x: 55, y: 70 },
+      //   { id: 3, name: 'Child 2', x: 110  , y: 70},
+      //   { id: 4, name: 'Child 2', x: 165 , y: 70 },
+      //   { id: 5, name: 'Child 2', x: 220 , y: 70 },
+      //   { id: 6, name: 'grandchild 1', x: 40, y: 120 },
+      //   { id: 7, name: 'grandchild 2', x: 80  , y: 120},
+      //   { id: 8, name: 'grandchild 2', x: 120 , y: 120 },
+      //   { id: 9, name: 'grandchild 2', x: 160 , y: 120 }
+      // ],
+      // arrows:[
+      //   { id: 1, point1: 0 , point2: 2},
+      //   { id: 2, point1: 0 , point2: 3},
+      //   { id: 3, point1: 0 , point2: 4},
+      // ]
      
     };
   },
@@ -490,8 +502,41 @@ export default {
 
   
   methods: {
-    
-    
+    // handleDragEnd(){
+    //   console.log("handle Drag End works")
+    // },
+    handleDragMove(e){
+      const onEllipse = e.target instanceof Konva.Group;
+      if (!onEllipse) {
+          return;
+      }
+      let id = parseInt(e.target.id().split('-').pop());
+      console.log(this.nodes[id]);
+      const stage = e.target.getStage();
+      var shape = stage.findOne('#circleTree-'+id);
+      this.nodes[id].x = e.target.x(); 
+      this.nodes[id].y = e.target.y(); 
+      // var arr = stage.findOne('#arr-'+1);
+    //  console.log(arr)
+      console.log(this.nodes[id].x)
+      console.log(this.nodes[id].y)
+      console.log(shape.x())
+      console.log(shape.y())
+      // console.log(onEllipse.x())
+      // console.log(shape.x(e.target.x()))
+      // this.$refs.layerTree.batchDraw();
+      // console.log(e.target.getAbsolutePosition().x/ stage.width())
+      // console.log(e.target.getAbsolutePosition().y/ stage.height())
+      // console.log("x"+e.target.x())
+      e.target.getLayer().batchDraw();
+      // for(let i=0; i<this.arrows.length;i++){
+      //   if(this.arrows[i].point1 === e.target.id()){
+
+      //   }
+        
+      // }
+      // console.log(e.target.x())
+    },
     onclickDrop(option){
       this.selectedItem = option;
       console.log("onchange")
@@ -833,9 +878,7 @@ export default {
       if((this.visitedCount+1)<this.visitedNodesInOrder.length){
         this.visitedCount += 1;
         this.colorNode(this.visitedNodesInOrder[this.visitedCount], "#ed81c4");
-        
-        
-        console.log("Adding next");
+        console.log("doing next")
         console.log(this.visitedNodesInOrder[this.visitedCount]);
         
         //adding stack table
@@ -859,6 +902,29 @@ export default {
           // }
           this.listNodesFrom.push(node.point1);
           this.listNodesTo.push(node.point2);
+        }
+
+        if(this.selectedItem ==="Uniform Cost"){
+          const node = this.visitedNodesInOrder[this.visitedCount];
+        }
+
+        if(this.selectedItem == "A*"){
+            const node = this.visitedNodesInOrder[this.visitedCount];
+            const myTable = document.getElementById('astartable');
+            // Insert a new row at the end of the table
+            const newRow = myTable.insertRow();
+
+            // Insert cells into the new row
+            const cell1 = newRow.insertCell();
+            const cell2 = newRow.insertCell();
+            const cell3 = newRow.insertCell();
+            const cell4 = newRow.insertCell();
+
+            // Set the content of the cells
+            cell1.textContent = node.point2;
+            cell2.textContent = (node.cost.H).toFixed(2);
+            cell3.textContent = (node.cost.G).toFixed(2);
+            cell4.textContent = (node.cost.F).toFixed(2);
         }
         
       }
@@ -914,6 +980,8 @@ export default {
     createHeuristic(node){
        const size = this.list.length;
        const endNode= this.list[node];
+       console.log("doing the end node")
+       console.log(endNode);
        let heuristic = [];
        
 
@@ -1071,12 +1139,12 @@ export default {
   },
   getPath(){
     this.cantPlayPrev = false;
-    var table = document.getElementById("resTable");
+    if(this.selectedItem ==="BFS"||this.selectedItem ==="DFS"){
+      var table = document.getElementById("resTable");
+      // Get an array of all the td elements in the table
+      var tds = table.getElementsByTagName("td");
+    }
 
-    // Get an array of all the td elements in the table
-    var tds = table.getElementsByTagName("td");
-
-   
     for (let i = this.calculatedPath.length-1; i >= 1; i--) {
       let node = this.calculatedPath[i];
       
@@ -1125,6 +1193,52 @@ export default {
        const GOALNODE = this.goalNode;
        const size = this.list.length;
        const heuristic = this.createHeuristic(GOALNODE);
+       console.log("the heuristic chuchu")
+       console.log(heuristic)
+
+      const myDiv = document.getElementById('astar');
+
+        // Create a new table element
+      const myTable = document.createElement('table');
+
+      // Create a header row
+      const headerRow = myTable.insertRow();
+      const headerCell1 = headerRow.insertCell();
+      const headerCell2 = headerRow.insertCell();
+      headerCell1.textContent = 'Nodes #';
+      headerCell2.textContent = 'Heuristic';
+
+
+      for (const item of heuristic) {
+        const row = myTable.insertRow();
+        const cell1 = row.insertCell();
+        const cell2 = row.insertCell();
+        cell1.textContent = item.node;
+        cell2.textContent = item.hval;
+      
+
+      }
+
+      // Append the table element to the div
+      myDiv.appendChild(myTable);
+
+      const otherTable = document.createElement('table');
+      // Create a header row
+      const headerRowo = otherTable.insertRow();
+      const headerCell1o = headerRowo.insertCell();
+      const headerCell2o = headerRowo.insertCell();
+      const headerCell3o = headerRowo.insertCell();
+      const headerCell4o = headerRowo.insertCell();
+      headerCell1o.textContent = 'Nodes #';
+      headerCell2o.textContent = 'H cost';
+      headerCell3o.textContent = 'G cost';
+      headerCell4o.textContent = 'F cost (H+G)';
+
+      otherTable.id = 'astartable';
+      otherTable.style.marginTop = '10px';
+
+      myDiv.appendChild(otherTable);
+
        return astar(this.grid, STARTNODE, GOALNODE, size, heuristic );
 
     },
@@ -1133,7 +1247,40 @@ export default {
        const GOALNODE = this.goalNode;
        const size = this.list.length;
        const heuristic = this.createHeuristic(GOALNODE);
-       return greedyBFS(this.grid, STARTNODE, GOALNODE, size, heuristic );
+
+
+       console.log("the heuristic chuchu")
+       console.log(heuristic)
+
+      const myDiv = document.getElementById('heuristic');
+
+        // Create a new table element
+      const myTable = document.createElement('table');
+
+      // Create a header row
+      const headerRow = myTable.insertRow();
+      const headerCell1 = headerRow.insertCell();
+      const headerCell2 = headerRow.insertCell();
+      headerCell1.textContent = 'Nodes #';
+      headerCell2.textContent = 'Heuristic';
+
+
+      for (const item of heuristic) {
+        const row = myTable.insertRow();
+        const cell1 = row.insertCell();
+        const cell2 = row.insertCell();
+        cell1.textContent = item.node;
+        cell1.style.border = '1px solid gray';
+        cell2.textContent = item.hval;
+        cell2.style.border = '1px solid gray';
+        cell2.style.padding = '3px';
+
+      }
+
+      // Append the table element to the div
+      myDiv.appendChild(myTable);
+
+      return greedyBFS(this.grid, STARTNODE, GOALNODE, size, heuristic );
       
     },
     visualizeUniformCost(){
@@ -1167,7 +1314,9 @@ export default {
           }
 
           // this.animateAlgorithm(this.visitedNodesInOrder, this.calculatedPath);
-
+          console.log("this is in run graphe");
+          console.log(this.visitedNodesInOrder)
+          console.log(this.calculatedPath)
           this.cantPlayNext = false;
 
        }

@@ -13,7 +13,7 @@ export function uniformCost(grid, startNode, finishNode, size, heuristic) {
   console.log("uniformCost is clicked");
 
   while (openlist.length > 0) {
-    openlist.sort((a, b) => a.cost.F - b.cost.F);
+    openlist.sort((a, b) => a.distance - b.distance);
     const current = openlist.shift();
 
 
@@ -30,9 +30,9 @@ export function uniformCost(grid, startNode, finishNode, size, heuristic) {
       if (closedlist.includes(nNode)) continue;
 
       //Addition of the node heuristics and distance cost
-      nNode.cost.F = nNode.cost.G;
+      nNode.cost.F = current.distance + nNode.distance;
 
-      if (!openlist.includes(nNode)) {
+      if (!openlist.includes(nNode)|| nNode.cost.F < current.distance) {
         nNode.previousNode = current;
         openlist.push(nNode);
       }
@@ -50,8 +50,8 @@ function getAllNeighbors(grid, node, size) {
     var tempNode = grid[point2][i];
     if (!tempNode.isVisited && tempNode.distance > 0) {
       grid[i][point2].isVisited = true;
-      grid[i][point2].cost.G += node.cost.G;
-      grid[point2][i].cost.G += node.cost.G;
+      // grid[i][point2].distance += node.distance;
+      // grid[point2][i].distance += node.distance;
       neighbors.push(tempNode);
     }
   }
