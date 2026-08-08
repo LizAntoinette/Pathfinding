@@ -1,69 +1,44 @@
-export function uniformCost(grid, startNode, finishNode, size, heuristic) {
-  const closedlist = [];
-  const openlist = [];
+import {
+  createSearchNode,
+  emptySearchResult,
+  getNeighbors,
+  reconstructPath
+} from "./searchHelpers";
 
-  startNode.cost = {
-    F: 0,
-    G: 0,
-    H: 0
-  };
+export function uniformCost(grid, startNode, finishNode, size) {
+  const start = createSearchNode(startNode);
+  start.cost = { F: 0, G: 0, H: 0 };
 
-  openlist.push(startNode);
+  const frontier = [start];
+  const bestByNode = new Map([[start.point2, start]]);
+  const closed = new Set();
+  const visitedNodesInOrder = [];
 
-  console.log("uniformCost is clicked");
+  while (frontier.length) {
+    frontier.sort((a, b) => a.cost.G - b.cost.G || a.point2 - b.point2);
+    const current = frontier.shift();
+    if (closed.has(current.point2)) continue;
 
-  while (openlist.length > 0) {
-    openlist.sort((a, b) => a.distance - b.distance);
-    const current = openlist.shift();
+    closed.add(current.point2);
+    visitedNodesInOrder.push(current);
 
+    if (current.point2 === finishNode) {
+      return [visitedNodesInOrder, reconstructPath(current)];
+    }
 
-    closedlist.push(current);
+    for (const edge of getNeighbors(grid, current.point2, size)) {
+      if (closed.has(edge.point2)) continue;
 
-    if (current.point2 === finishNode)
-      return [closedlist, calculatePath(current)];
+      const nextCost = current.cost.G + Number(edge.distance);
+      const existing = bestByNode.get(edge.point2);
+      if (existing && nextCost >= existing.cost.G) continue;
 
-    const neighbors = getAllNeighbors(grid, current, size);
-
-    for (let i = 0; i < neighbors.length; i++) {
-      const nNode = neighbors[i];
-      nNode.isVisited = true;
-      if (closedlist.includes(nNode)) continue;
-
-      //Addition of the node heuristics and distance cost
-      nNode.cost.F = current.distance + nNode.distance;
-
-      if (!openlist.includes(nNode)|| nNode.cost.F < current.distance) {
-        nNode.previousNode = current;
-        openlist.push(nNode);
-      }
+      const neighbor = createSearchNode(edge, current);
+      neighbor.cost = { F: nextCost, G: nextCost, H: 0 };
+      bestByNode.set(neighbor.point2, neighbor);
+      frontier.push(neighbor);
     }
   }
- 
-  return [closedlist, calculatePath(finishNode)];
-}
 
-function getAllNeighbors(grid, node, size) {
-  const neighbors = [];
-  const point2 = node.point2;
-
-  for (let i = 0; i < size; i++) {
-    var tempNode = grid[point2][i];
-    if (!tempNode.isVisited && tempNode.distance > 0) {
-      grid[i][point2].isVisited = true;
-      // grid[i][point2].distance += node.distance;
-      // grid[point2][i].distance += node.distance;
-      neighbors.push(tempNode);
-    }
-  }
-  return neighbors;
-}
-
-function calculatePath(finishNode) {
-  const shortestPathNodes = [];
-  let currentNode = finishNode;
-  while (currentNode !== null) {
-    shortestPathNodes.unshift(currentNode);
-    currentNode = currentNode.previousNode;
-  }
-  return shortestPathNodes;
+  return emptySearchResult(visitedNodesInOrder);
 }

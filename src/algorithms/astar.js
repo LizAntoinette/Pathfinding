@@ -1,88 +1,48 @@
-export function astar(grid, startNode, finishNode, size, heuristic, distances) {
-  const closedlist = [];
-  const openlist = [];
-  const startH = heuristic.find((h) => h.node === startNode.point2);
-  startNode.cost = {
-    F: 0.0,
-    G: 0.0,
-    H:startH.hval
-  };
-  console.log("clicking a*")
-  openlist.push(startNode);
+import {
+  createSearchNode,
+  emptySearchResult,
+  getNeighbors,
+  heuristicByNode,
+  reconstructPath
+} from "./searchHelpers";
 
-  while (openlist.length > 0) {
-    openlist.sort((a, b) => parseFloat(a.cost.F) - parseFloat(b.cost.F));
-    const current = openlist.shift( );
+export function astar(grid, startNode, finishNode, size, heuristic) {
+  const heuristicMap = heuristicByNode(heuristic);
+  const start = createSearchNode(startNode);
+  const startH = heuristicMap.get(start.point2);
+  start.cost = { F: startH, G: 0, H: startH };
 
-    closedlist.push(current);
+  const frontier = [start];
+  const bestByNode = new Map([[start.point2, start]]);
+  const closed = new Set();
+  const visitedNodesInOrder = [];
 
-    if (current.point2 === finishNode)
-      return [closedlist, calculatePath(current)];
+  while (frontier.length) {
+    frontier.sort((a, b) => a.cost.F - b.cost.F || a.cost.H - b.cost.H);
+    const current = frontier.shift();
+    if (closed.has(current.point2)) continue;
 
-   
-    const neighbors = getAllNeighbors(grid, current, size);
+    closed.add(current.point2);
+    visitedNodesInOrder.push(current);
 
-    for (let i = 0; i < neighbors.length; i++) {
-      const nNode = neighbors[i];
-      if (closedlist.includes(nNode)) continue;
+    if (current.point2 === finishNode) {
+      return [visitedNodesInOrder, reconstructPath(current)];
+    }
 
-      const hNode = heuristic.find( (h) => h.node === nNode.point2);
-      nNode.isVisited = true;
-      // console.log("current node");
-      // console.log(current);
-      // console.log("neighbor node");
-      // console.log(nNode);
-      
-     
-      let tentativeG = current.cost.G  +  parseFloat(nNode.distance);
-      console.log("tentative G");
-      console.log("current cost g: " +current.cost.G+"  neighbor distance: "+ nNode.distance +" =  "+ tentativeG);
-     nNode.previousNode = current;
+    for (const edge of getNeighbors(grid, current.point2, size)) {
+      if (closed.has(edge.point2)) continue;
 
-      if (!openlist.includes(nNode)) {
-        openlist.push(nNode);
-      }else if (tentativeG >= parseFloat(nNode.distance)) {
-        continue;
-      }
+      const nextG = current.cost.G + Number(edge.distance);
+      const existing = bestByNode.get(edge.point2);
+      if (existing && nextG >= existing.cost.G) continue;
 
-      // nNode.previousNode = current;
-      nNode.cost.H = parseFloat(hNode.hval);
-      nNode.cost.G =   parseFloat(tentativeG);
-      nNode.cost.F =  parseFloat(nNode.cost.G) + parseFloat(nNode.cost.H);
-      // console.log("the F solution thingy");
-      // console.log("tentativeG: "+ nNode.cost.G+" neighgor heuristic: "+nNode.cost.H+" = "+ nNode.cost.F);
+      const neighbor = createSearchNode(edge, current);
+      const hCost = heuristicMap.get(neighbor.point2);
+      neighbor.cost = { F: nextG + hCost, G: nextG, H: hCost };
+      bestByNode.set(neighbor.point2, neighbor);
+      frontier.push(neighbor);
     }
   }
-  return [closedlist, calculatePath(finishNode)];
-}
 
-function distance(nodeA, nodeB) {
-  // return distance between nodeA and nodeB
-  return Math.sqrt(Math.pow(nodeB.x - nodeA.x, 2) + Math.pow(nodeB.y - nodeA.y, 2));
-}
-
-function getAllNeighbors(grid, node, size) {
-  const neighbors = [];
-  const point2 = node.point2;
-
-  for (let i = 0; i < size; i++) {
-    var tempNode = grid[point2][i];
-    if (!tempNode.isVisited && tempNode.distance > 0) {
-      grid[i][point2].isVisited = true;
-      // grid[i][point2].distance += node.distance;
-      // grid[point2][i].distance += node.distance;
-      neighbors.push(tempNode);
-    }
-  }
-  return neighbors;
-}
-
-function calculatePath(finishNode) {
-  const shortestPathNodes = [];
-  let currentNode = finishNode;
-  while (currentNode !== null) {
-    shortestPathNodes.unshift(currentNode);
-    currentNode = currentNode.previousNode;
-  }
-  return shortestPathNodes;
+  return emptySearchResult(visitedNodesInOrder);
 }

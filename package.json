@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "serve": "node --openssl-legacy-provider node_modules/@vue/cli-service/bin/vue-cli-service.js serve",
+    "build": "node --openssl-legacy-provider node_modules/@vue/cli-service/bin/vue-cli-service.js build",
+    "lint": "vue-cli-service lint",
+    "test": "node tests/algorithms.test.js && node tests/animation.test.js"
   },
   "dependencies": {
     "@vue/cli-plugin-babel": "4.1.1",
@@ -49,5 +50,5 @@
     "not ie <= 8"
   ],
   "keywords": [],
-  "description": ""
+  "description": "Interactive Vue and Konva pathfinding algorithm visualizer"
 }

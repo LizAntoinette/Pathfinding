@@ -1,1351 +1,900 @@
 <template>
-<div class="row">
-<div class="sidebar">
-        <h1 class="mt-4">Pathfinding</h1>
-        <h1> Visualizer</h1>
-        <div class="grid-container mx-4 mt-3">
-          <div class="button-div1 mx-3">
-             <b-dropdown block class="ml-2 algobtn " :text="selectedItem" v-model="selectedItem" >
-                <b-dropdown-header id="unweighted">
-                  Unweighted
-                </b-dropdown-header>
-                <b-dropdown-item-button :key="'BFS'" @click="onclickDrop('BFS')"  aria-describedby="unweighted">
-                  BFS
-                </b-dropdown-item-button>
-                <b-dropdown-item-button :key="'DFS'" @click="onclickDrop('DFS')"  aria-describedby="unweighted" >
-                  DFS
-                </b-dropdown-item-button>
-                <b-dropdown-header id="weighted">
-                  Weighted
-                </b-dropdown-header>
-                <b-dropdown-item-button :key="'Uniform Cost'" @click="onclickDrop('Uniform Cost')"  aria-describedby="unweighted">
-                  Uniform Cost
-                </b-dropdown-item-button>
-                <b-dropdown-item-button :key="'Greedy BFS'" @click="onclickDrop('Greedy BFS')"  aria-describedby="unweighted">
-                  Greedy BFS
-                </b-dropdown-item-button>
-                <b-dropdown-item-button :key="'A*'" @click="onclickDrop('A*')"  aria-describedby="unweighted">
-                  A*
-                </b-dropdown-item-button>
-              
-            </b-dropdown>
-          </div>
-          <div class="button-div2 ml-4 mr-2 mt-2">
-             <input id="fileUpload" type="file" @change="onFileSelected" hidden>
-             <b-button block  @click="chooseFiles()"  > Import Graph </b-button>
-          </div>
-          <div class="button-div3 mr-3 mt-2">
-              <b-button block @click="savefile"> Save Graph </b-button>
-          </div>
-          <div class="button-div4">
-             <h6 class="mt-3"> <b>Add to Graph </b></h6>
-          </div>
-          <div class="button-div5 ml-4 mr-2 mt-2">
-              <b-button block class="btn btn-secondary" @click="addingVertex" >
-                Vertex
-              </b-button>
-          </div>
-          <div class="button-div6 mr-3 mt-2">
-             <b-button block  class="btn btn-secondary" @click="addingConnection">
-                Connection
-              </b-button>
-          </div>
-          <!-- </div> -->
-          <!-- <div class="button-div7"></div>
-          <div class="button-div8"></div> -->
-          <div class="button-div8 ml-3 mr-4">
-             <b-button block class="btn ml-2 mr-3 btn-secondary" @click="runGraph">Visualize Algo</b-button>
-          </div>
-          <div class="button-div10 ml-3 mr-4">
-             <b-button :disabled="cantrunShortPath" block class="btn ml-2 mr-3 btn-secondary" @click="getPath">Get the Path</b-button>
-          </div>
-          <div class="button-div9 ml-3 mr-4">
-             <b-button block class="btn ml-2 mr-3 btn-secondary " @click="clearScreen">Clear Graph</b-button>
-          </div>
-          <!--  <div class="button-div7"> -->
-            <b-form inline class="button-div7 mx-3 mb-2" > 
-              <div class="button-div10 mx-2 ">
-              
-                  <label class="" for="start-node">Start node:</label>
-                  <b-form-select
-                    @change="changeColorStart"
-                    id="start-node"
-                    class=""
-                    :options="optionsStartNode"
-                    v-model="startNode"
-                    :value="null"
-                  ></b-form-select>
-              </div>
-              <div class="button-div11">
-                <label class="" for="end-node">Goal node:</label>
-                <b-form-select
-                  id="end-node"
-                  class=""
-                  @change="changeColorGoal"
-                  :options="optionsGoalNode"
-                  v-model="goalNode"
-                  :value="null"
-                ></b-form-select>
-              </div>
-            </b-form>
-         
-        
-          
+  <div class="app-shell">
+    <aside class="sidebar">
+      <header class="sidebar__header">
+        <p class="eyebrow">Interactive graph explorer</p>
+        <h1>Pathfinding Visualizer</h1>
+      </header>
+
+      <div class="sidebar__controls">
+        <b-dropdown block :text="selectedAlgorithm" variant="dark">
+          <b-dropdown-header id="unweighted">Unweighted</b-dropdown-header>
+          <b-dropdown-item-button
+            v-for="algorithm in unweightedAlgorithms"
+            :key="algorithm"
+            aria-describedby="unweighted"
+            @click="selectAlgorithm(algorithm)"
+          >
+            {{ algorithm }}
+          </b-dropdown-item-button>
+          <b-dropdown-divider />
+          <b-dropdown-header id="weighted">Weighted</b-dropdown-header>
+          <b-dropdown-item-button
+            v-for="algorithm in weightedAlgorithms"
+            :key="algorithm"
+            aria-describedby="weighted"
+            @click="selectAlgorithm(algorithm)"
+          >
+            {{ algorithm }}
+          </b-dropdown-item-button>
+        </b-dropdown>
+
+        <div class="button-grid">
+          <input
+            ref="fileUpload"
+            type="file"
+            accept=".json,.txt,application/json,text/plain"
+            hidden
+            @change="onFileSelected"
+          >
+          <b-button block variant="outline-light" @click="chooseFile">Import graph</b-button>
+          <b-button block variant="outline-light" :disabled="!list.length" @click="saveFile">
+            Save graph
+          </b-button>
         </div>
-       
-      
-    </div>
 
+        <fieldset>
+          <legend>Add to graph</legend>
+          <div class="button-grid">
+            <b-button
+              block
+              :variant="vertexMode ? 'primary' : 'secondary'"
+              @click="toggleVertexMode"
+            >
+              Vertex
+            </b-button>
+            <b-button
+              block
+              :variant="connectionMode ? 'primary' : 'secondary'"
+              @click="toggleConnectionMode"
+            >
+              Connection
+            </b-button>
+          </div>
+        </fieldset>
 
-    <div class="main container">
-        <!-- <p> For the are viewers out there.. if you see this text, it means this is still under development. But you can view the algorithms, it's already done.. </p> -->
-      
-         <div class="row pt-4 ml-4">
-            
-             <b-card class="col-7 drawArea" id="drawArea" style="height: 35rem">
-                <v-stage
-                  :config="stageSize"
-                  @click="handleClick"
-                  ref="konva"
-                  @mousedown="handleMouseDown"
-                  @mouseup="handleMouseUp"
-                  @mousemove="handleMouseMove"
-                >
-                <v-layer ref="layer">
-                      <v-line
-                        v-for="line in connections"
-                        :key="line.id"
-                        :config="{
-                          stroke: 'black',
-                          points: line.points,
-                          id: line.id
-                          
-                        }"
-                      />
+        <div class="node-selectors">
+          <label for="start-node">Start node</label>
+          <b-form-select
+            id="start-node"
+            v-model="startNode"
+            :options="nodeOptions"
+            @change="changeStartNode"
+          />
 
-                    <v-circle
-                      
-                      v-for="(item, index) in list"
-                      :key="item.id"
+          <label for="goal-node">Goal node</label>
+          <b-form-select
+            id="goal-node"
+            v-model="goalNode"
+            :options="goalNodeOptions"
+            @change="changeGoalNode"
+          />
+        </div>
 
-                      :config="{
-                        x: item.x,
-                        y: item.y,
-                        
-                        radius: 15,
-                        fill: '#a20417',
-                        //draggable:true,
-                        stroke: '#a20417',
-                        strokeWidth: 2,
-                        id:'circle'+index
-                      }"
-                    ></v-circle>
-                  <v-text
-                    v-for="(item, index) in list"
-                    :key="item.id"
-                    :config="{
-                      x: item.x + 11,
-                      y: item.y + 11,
-                      text: index,
-                      fontSize: 15,
-                      width: 300,
-                    }" 
-                  ></v-text>
-                  <v-text
-                    v-for="label in distances"
-                    :key="label.id"
-                    :config="{
-                      x: label.x,
-                      y: label.y,
-                      text: label.distance,
-                    }"
-                  />
-            <p class="text-left">Click Vertex button and click here to add vertex</p>
-            <!-- <v-text :key="label_txt" :config="{ text: 'Click Vertex button and click here to add vertex'}"/> -->
-                  </v-layer>
-                </v-stage>
-             </b-card>
-            
-                <b-card class="col-4 ml-3" id="label" style="height: 35rem">
-                    <div class="row box-top">
+        <b-button block variant="primary" :disabled="isAnimating" @click="runGraph">
+          {{ isAnimating ? "Animating…" : "Visualize algorithm" }}
+        </b-button>
+        <b-button block variant="light" :disabled="cannotShowPath" @click="getPath">
+          Show shortest path
+        </b-button>
+        <b-button block variant="outline-light" @click="clearScreen">Clear graph</b-button>
 
-                       <h4>Graph Details</h4>
-                       <button :disabled="cantPlayPrev" @click="prev" class="btn btn-outline-secondary rounded-circle play-button push-top mr-2"> prev</button>
-                       <button :disabled="cantPlayNext" @click="next" class="btn btn-outline-secondary rounded-circle play-button mr-3">next</button>
-                       <!-- <button :disabled="disablePath" @click="getShortPath" class="btn btn-outline-secondary rounded-circle play-button">Get Path</button> -->
-                    </div>
-                    
-                    <div id="heuristic"></div>
-                    <div id="astar"></div>
-                    <div v-if="selectedItem ==='BFS' || selectedItem ==='DFS'">
-                      <div class="row">
-                        
-                        <p>Adjacency Matrix</p>
-                        
-                      </div>
-                      <table id="my-table">
-                          
-                          <tbody>
-                            <tr v-for="(row, rowIndex) in tableData" :key="rowIndex">
-                              <td v-for="(cell, cellIndex) in row" :key="cellIndex" >{{ cell }}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      <div class="row mt-3" id="distance-list" >
-                        <div class="ml-1">
-                        
-                          <p>{{ labelResult }}</p>
-                          
-                        </div>
-                       
-                        <table  class=" mt-4" id="resTable">
-                          
-                          <tbody>
-                            <tr>
-                              <td v-if="listNodesFrom.length !=0" class="stack">From</td>
-                              <td class="stack" v-for="from in listNodesFrom"  :key="from">{{ from }}</td>
-                              <!-- <td v-for="(item, index) in listNodes" :key="item.id">{{ cell }}</td> -->
-                            </tr>
-                            <tr>
-                              <td v-if="listNodesTo.length !=0" class="stack">To</td>
-                              <td class="stack" v-for="toNode in listNodesTo"  :key="toNode">{{ toNode }}</td>
-                              <!-- <td v-for="(item, index) in listNodes" :key="item.id">{{ cell }}</td> -->
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <div class="row mt-3" id="distance-list" >
-                        <div class="ml-1">
-                        
-                        <p>Output</p>
-                        
-                       </div>
+        <p v-if="statusMessage" class="status-message" role="status">{{ statusMessage }}</p>
+      </div>
+    </aside>
 
-                        <table  class=" mt-4" >
-                          
-                          <tbody>
-                            <tr>
-                              <td v-if="outputNodesFrom.length !=0" class="stack">To</td>
-                              <td class="stack" v-for="fromNodes in outputNodesFrom"  :key="fromNodes">{{ fromNodes }}</td>
-                              <!-- <td v-for="(item, index) in listNodes" :key="item.id">{{ cell }}</td> -->
-                            </tr>
-                            <tr>
-                              <td v-if="outputNodesTo.length !=0" class="stack">From</td>
-                              <td class="stack" v-for="toNodes in outputNodesTo"  :key="toNodes">{{ toNodes }}</td>
-                              <!-- <td v-for="(item, index) in listNodes" :key="item.id">{{ cell }}</td> -->
-                            </tr>
-                            
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+    <main class="main-content">
+      <section class="workspace-card graph-card">
+        <div class="card-heading">
+          <div>
+            <p class="eyebrow">Canvas</p>
+            <h2>Your graph</h2>
+          </div>
+          <p class="mode-hint">{{ modeHint }}</p>
+        </div>
 
-                    <div  v-if="!(selectedItem ==='BFS' || selectedItem ==='DFS')">
-                      <v-stage ref="stageTree" :config="stageConfigTree">
-                        <v-layer ref="layerTree">
-                                <v-line
-                                  v-for="line in arrows"
-                                  :key="'arr-'+line.id"
-                                  :config="{
-                                    stroke: 'black',
-                                    points: [nodes[line.point1].x,nodes[line.point1].y, nodes[line.point2].x, nodes[line.point2].y],
-                                    id: 'arr-'+line.id
-                                    
-                                  }"
-                                />
-                                <v-group
-                                  v-for="(item, index) in nodes"
-                                  :key="item.id"
-                                  :id="'circleTree-'+index"
-                                  @dragmove="handleDragMove"
-                                  :config="{
-                                    x: item.x ,
-                                    y: item.y,
-                                    draggable: true,
-                                    
-                                  }"
-                                  >
-                                  <v-ellipse
-                                    :key="'node' + item.id"
-                                    :config="{
-                                      x: 0,
-                                      y: 0,
-                                      
-                                      radiusY: 10,
-                                      radiusX: 20,
-                                      fill: 'black',
-                                      //draggable:true,
-                                     
-                                      stroke: 'black',
-                                      strokeWidth: 1,
-                                      id:'ellipse'+index
-                                    }"
-                                  ></v-ellipse>
-                                <v-text
-                                  :config="{
-                                    text: index,
-                                    x: 0-5,
-                                    y: 0-5,
-                                    text: index,
-                                    fontSize: 15,
-                                    fill:'white',
-                                    width: 300
-                                  }"
-                                ></v-text>
-                                <v-text
-                                  :config="{
-                                    text: index,
-                                    x: 0-5,
-                                    y: 0+12,
-                                    text: index,
-                                    fontSize: 15,
-                                    fill:'black',
-                                    width: 300
-                                  }"
-                                ></v-text>
-                              </v-group>  
+        <div ref="stageContainer" class="stage-container">
+          <v-stage
+            ref="konva"
+            :config="stageSize"
+            @click="handleCanvasClick"
+            @mousedown="handleMouseDown"
+            @mousemove="handleMouseMove"
+            @mouseup="handleMouseUp"
+            @mouseleave="cancelDraftConnection"
+          >
+            <v-layer>
+              <v-line
+                v-for="line in connections"
+                :key="line.id"
+                :config="{
+                  id: line.id,
+                  points: line.points,
+                  stroke: line.color,
+                  strokeWidth: 3,
+                  lineCap: 'round'
+                }"
+              />
 
-                              <!-- <v-ellipse
-                                
-                                v-for="(item, index) in nodes"
-                                :key="item.id"
+              <v-text
+                v-for="label in distanceLabels"
+                :key="label.id"
+                :config="{
+                  x: label.x - 24,
+                  y: label.y - 16,
+                  width: 48,
+                  align: 'center',
+                  text: label.text,
+                  fontSize: 11,
+                  fill: '#111827',
+                  listening: false
+                }"
+              />
 
-                                :config="{
-                                  x: item.x,
-                                  y: item.y,
-                                  
-                                  radiusY: 10,
-                                  radiusX: 20,
-                                  fill: 'black',
-                                  //draggable:true,
-                                  draggable: true ,
-                                  stroke: 'black',
-                                  strokeWidth: 1,
-                                  id:'circleTree'+index
-                                }"
-                              ></v-ellipse>
-                            <v-text
-                              v-for="(item, index) in nodes"
-                              :key="item.id+'txt'"
-                              :config="{
-                                x: item.x-5,
-                                y: item.y-5,
-                                text: index,
-                                fontSize: 15,
-                                fill:'white',
-                                width: 300
+              <v-circle
+                v-for="(node, index) in list"
+                :key="node.id"
+                :config="{
+                  id: `circle-${index}`,
+                  x: node.x,
+                  y: node.y,
+                  radius: 18,
+                  fill: node.color,
+                  stroke: '#ffffff',
+                  strokeWidth: 2,
+                  shadowColor: '#111827',
+                  shadowBlur: 5,
+                  shadowOpacity: 0.24
+                }"
+              />
 
-                              }" 
-                            ></v-text> -->
-                        </v-layer>
-                      </v-stage>
-                    </div>
-                </b-card>
+              <v-text
+                v-for="(node, index) in list"
+                :key="`${node.id}-label`"
+                :config="{
+                  x: node.x - 18,
+                  y: node.y - 7,
+                  width: 36,
+                  align: 'center',
+                  text: String(index),
+                  fontSize: 14,
+                  fontStyle: 'bold',
+                  fill: '#ffffff',
+                  listening: false
+                }"
+              />
+            </v-layer>
+          </v-stage>
 
-          
+          <div v-if="!list.length" class="empty-canvas">
+            Select Vertex, then click anywhere here to begin.
+          </div>
+        </div>
+      </section>
 
-         </div>
-         
-        
-    </div>
+      <section class="workspace-card details-card">
+        <div class="card-heading details-heading">
+          <div>
+            <p class="eyebrow">Playback</p>
+            <h2>Graph details</h2>
+          </div>
+          <div class="playback-controls" aria-label="Animation controls">
+            <button type="button" :disabled="cannotPlayPrevious" @click="previousStep">← Prev</button>
+            <button type="button" :disabled="cannotPlayNext" @click="nextStep">Next →</button>
+          </div>
+        </div>
 
-</div>
-  
+        <template v-if="isUnweighted">
+          <h3>Adjacency matrix</h3>
+          <div class="table-scroll">
+            <table class="data-table matrix-table">
+              <tbody>
+                <tr v-for="(row, rowIndex) in adjacencyMatrix" :key="`row-${rowIndex}`">
+                  <td v-for="(cell, cellIndex) in row" :key="`cell-${rowIndex}-${cellIndex}`">
+                    {{ cell }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>{{ traversalLabel }}</h3>
+          <div class="table-scroll">
+            <table class="data-table traversal-table">
+              <tbody>
+                <tr>
+                  <th>From</th>
+                  <td v-for="(node, index) in visibleTraversal" :key="`from-${index}`">
+                    {{ node.point1 }}
+                  </td>
+                </tr>
+                <tr>
+                  <th>To</th>
+                  <td v-for="(node, index) in visibleTraversal" :key="`to-${index}`">
+                    {{ node.point2 }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Shortest path</h3>
+          <p v-if="!visiblePath.length" class="empty-details">Run the search, then show its path.</p>
+          <div v-else class="path-list">
+            <span>{{ startNode }}</span>
+            <template v-for="(node, index) in visiblePath">
+              <span :key="`arrow-${index}`" aria-hidden="true">→</span>
+              <span :key="`path-${index}`">{{ node.point2 }}</span>
+            </template>
+          </div>
+        </template>
+
+        <template v-else-if="selectedAlgorithm !== defaultAlgorithm">
+          <template v-if="heuristics.length">
+            <h3>Heuristic distance to goal</h3>
+            <div class="table-scroll">
+              <table class="data-table cost-table">
+                <thead>
+                  <tr><th>Node</th><th>H</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in heuristics" :key="`heuristic-${item.node}`">
+                    <td>{{ item.node }}</td>
+                    <td>{{ formatCost(item.hval) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+
+          <h3>Visited nodes and costs</h3>
+          <p v-if="!visibleVisitedNodes.length" class="empty-details">
+            Choose start and goal nodes, then visualize the algorithm.
+          </p>
+          <div v-else class="table-scroll">
+            <table class="data-table cost-table">
+              <thead>
+                <tr><th>Node</th><th>G</th><th>H</th><th>F</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="(node, index) in visibleVisitedNodes" :key="`cost-${index}`">
+                  <td>{{ node.point2 }}</td>
+                  <td>{{ formatCost(node.cost.G) }}</td>
+                  <td>{{ formatCost(node.cost.H) }}</td>
+                  <td>{{ formatCost(node.cost.F) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Shortest path</h3>
+          <p v-if="!visiblePath.length" class="empty-details">Run the search, then show its path.</p>
+          <div v-else class="path-list">
+            <span>{{ startNode }}</span>
+            <template v-for="(node, index) in visiblePath">
+              <span :key="`weighted-arrow-${index}`" aria-hidden="true">→</span>
+              <span :key="`weighted-path-${index}`">{{ node.point2 }}</span>
+            </template>
+          </div>
+        </template>
+
+        <p v-else class="empty-details">
+          Select an algorithm to see its traversal and path details.
+        </p>
+      </section>
+    </main>
+  </div>
 </template>
+
 <script>
-import { Layer } from 'vue-konva';
-import Konva from "konva";
-import {bfs} from '../algorithms/breadthFirstSearch';
-import {dfs} from '../algorithms/depthFirstSearch';
-import {greedyBFS} from '../algorithms/greedyBestFirstSearch';
-import {astar} from '../algorithms/astar';
-import {uniformCost} from '../algorithms/uniformCost';
+import { astar } from "../algorithms/astar";
+import { bfs } from "../algorithms/breadthFirstSearch";
+import { dfs } from "../algorithms/depthFirstSearch";
+import { greedyBFS } from "../algorithms/greedyBestFirstSearch";
+import { uniformCost } from "../algorithms/uniformCost";
+
+const MAX_NODES = 20;
+const VISIT_DELAY_MS = 500;
+const PATH_DELAY_MS = 350;
+const COLORS = {
+  node: "#a20417",
+  start: "#159a68",
+  goal: "#14532d",
+  visited: "#db5cab",
+  path: "#ef334e",
+  edge: "#374151"
+};
+const DEFAULT_ALGORITHM = "Algorithms";
 
 export default {
+  name: "PathfindingVisualizer",
+
   data() {
     return {
-      file: null, 
-      fileContents: null,
-      objectUrl: null,
-      grid: null,
+      defaultAlgorithm: DEFAULT_ALGORITHM,
+      unweightedAlgorithms: ["BFS", "DFS"],
+      weightedAlgorithms: ["Uniform Cost", "Greedy BFS", "A*"],
+      selectedAlgorithm: DEFAULT_ALGORITHM,
+      list: [],
+      connections: [],
+      grid: [],
       startNode: null,
       goalNode: null,
-      prevStartNode: '',
-      prevGoalNode:'',
-      optionsStartNode:[],   
-      list: [],
-      edges: [],
-      distances: [],
-      connection: false,
-      vertex: false,
-      connections: [],
+      vertexMode: false,
+      connectionMode: false,
       drawingLine: false,
-      runnableGraph: false,
-      selectedItem: "Algorithms",
-      coor: "",
-      stageSize: {
-          width: 200,
-          height: 200,
-        },
-      tableData:[],
-      theStage:[],
-      //this is for the animation so no need to import it
-      cantPlayPrev:true,
-      cantPlayNext:true,
-      cantrunShortPath:true,
+      draftStartNode: null,
+      stageSize: { width: 640, height: 520 },
+      visitedNodesInOrder: [],
+      calculatedPath: [],
       visitedCount: 0,
-      visitedNodesInOrder: null, 
-      calculatedPath: null,
-      listNodesFrom: [],
-      listNodesTo: [],
-      outputNodesFrom: [],
-      outputNodesTo: [],
-      labelResult:'Details',
-      stageConfigTree: {
-        width:300,
-        height: 450
-      },
-      nodes: [
-        // { id: 0, name: 'Root', x: 150, y: 20 },
-      ],
-      arrows:[
-
-      ]
-      // nodes: [
-      //   { id: 1, name: 'Root', x: 150, y: 20 },
-      //   { id: 2, name: 'Child 1', x: 55, y: 70 },
-      //   { id: 3, name: 'Child 2', x: 110  , y: 70},
-      //   { id: 4, name: 'Child 2', x: 165 , y: 70 },
-      //   { id: 5, name: 'Child 2', x: 220 , y: 70 },
-      //   { id: 6, name: 'grandchild 1', x: 40, y: 120 },
-      //   { id: 7, name: 'grandchild 2', x: 80  , y: 120},
-      //   { id: 8, name: 'grandchild 2', x: 120 , y: 120 },
-      //   { id: 9, name: 'grandchild 2', x: 160 , y: 120 }
-      // ],
-      // arrows:[
-      //   { id: 1, point1: 0 , point2: 2},
-      //   { id: 2, point1: 0 , point2: 3},
-      //   { id: 3, point1: 0 , point2: 4},
-      // ]
-     
+      heuristics: [],
+      isAnimating: false,
+      pathHighlighted: false,
+      animationTimers: [],
+      resizeObserver: null,
+      statusMessage: "Add vertices and connections to build a graph."
     };
   },
-  created: function() {
-     this.initializeGrid();
 
-     for (let i = 0; i < 12; i++) {
-      let arr =[];
-      for (let j = 0; j < 12; j++) {
-       
-        if(i==0 && j!=0){
-          arr[j] = j-1;
-        }
-        else if(j==0 && i!=0 ){
-          arr[j] = i-1;
-        }
-        else{
-          arr[j] = "0";
-        }
-      }
-      this.tableData.push(arr);
+  computed: {
+    nodeOptions() {
+      return [
+        { value: null, text: "Select a node" },
+        ...this.list.map((node, index) => ({ value: index, text: `Node ${index}` }))
+      ];
+    },
+
+    goalNodeOptions() {
+      return this.nodeOptions.filter(option => option.value === null || option.value !== this.startNode);
+    },
+
+    distanceLabels() {
+      return this.connections
+        .filter(connection => connection.to !== null)
+        .map(connection => ({
+          id: `${connection.id}-distance`,
+          x: (connection.points[0] + connection.points[2]) / 2,
+          y: (connection.points[1] + connection.points[3]) / 2,
+          text: Number(connection.weight).toFixed(1)
+        }));
+    },
+
+    adjacencyMatrix() {
+      const header = ["", ...this.list.map((node, index) => index)];
+      const rows = this.list.map((node, row) => [
+        row,
+        ...this.list.map((otherNode, column) => Number(this.grid[row][column].distance) > 0 ? 1 : 0)
+      ]);
+      return [header, ...rows];
+    },
+
+    isUnweighted() {
+      return this.unweightedAlgorithms.includes(this.selectedAlgorithm);
+    },
+
+    traversalLabel() {
+      return this.selectedAlgorithm === "DFS" ? "Stack traversal" : "Queue traversal";
+    },
+
+    visibleTraversal() {
+      return this.visitedNodesInOrder.slice(1, this.visitedCount + 1);
+    },
+
+    visibleVisitedNodes() {
+      if (!this.visitedNodesInOrder.length) return [];
+      return this.visitedNodesInOrder.slice(0, this.visitedCount + 1);
+    },
+
+    visiblePath() {
+      return this.pathHighlighted ? this.calculatedPath.slice(1) : [];
+    },
+
+    cannotPlayPrevious() {
+      return this.isAnimating || this.visitedCount === 0;
+    },
+
+    cannotPlayNext() {
+      return this.isAnimating || !this.visitedNodesInOrder.length ||
+        this.visitedCount >= this.visitedNodesInOrder.length - 1;
+    },
+
+    cannotShowPath() {
+      return this.isAnimating || !this.calculatedPath.length ||
+        this.visitedCount < this.visitedNodesInOrder.length - 1 || this.pathHighlighted;
+    },
+
+    modeHint() {
+      if (this.vertexMode) return "Click the canvas to add a vertex.";
+      if (this.connectionMode) return "Drag from one vertex to another.";
+      return "Choose a graph tool from the sidebar.";
     }
-    console.log(this.tableData);
-    //  for (let i = 0; i < 22; i++) {
-    //       // Create a new row
-    //       const row = document.createElement('tr');
-    //       for (let j = 0; j < 22; j++) {
-    //         // Create a new cell and add it to the row
-    //          cell = document.createElement('td');
-    //         if(i==0 && j!=0){
-    //           cell.textContent = j-1;
-    //         }
-    //         else if(j==0 && i!=0 ){
-    //           cell.textContent = i-1;
-    //         }
-    //         else{
-    //           cell.textContent = "0";
-    //         }
-            
-    //         row.appendChild(cell);
-    //       }
-    //       // Add the row to the table
-    //       document.getElementById('matrix').appendChild(row);
-    //   }
-  },
-  mounted: function () {
-    //For Dynamic Stage Size
-    const container = document.querySelector(".drawArea");
-    const observer = new ResizeObserver(() => {
-      this.stageSize.width = container.offsetWidth;
-      this.stageSize.height = container.offsetHeight;
-    });
-    observer.observe(container);
-
-    
-  },
- 
-  computed:{
-   
-    optionsGoalNode(){
-        return this.optionsStartNode.filter((node) => {
-            return node !== this.startNode;
-        
-        });
-    },   
-    // cellHasValue(){
-    //      const cells = document.querySelector("td"); // Get all table cells
-    //      return Array.from(cells).some(cell => cell.textContent.trim() == 0 );
-    // }
-
-    
   },
 
-  
+  created() {
+    this.initializeGrid();
+  },
+
+  mounted() {
+    this.updateStageSize();
+    if (typeof ResizeObserver !== "undefined") {
+      this.resizeObserver = new ResizeObserver(this.updateStageSize);
+      this.resizeObserver.observe(this.$refs.stageContainer);
+    }
+  },
+
+  beforeDestroy() {
+    this.cancelAnimation();
+    if (this.resizeObserver) this.resizeObserver.disconnect();
+  },
+
   methods: {
-    // handleDragEnd(){
-    //   console.log("handle Drag End works")
-    // },
-    handleDragMove(e){
-      const onEllipse = e.target instanceof Konva.Group;
-      if (!onEllipse) {
-          return;
-      }
-      let id = parseInt(e.target.id().split('-').pop());
-      console.log(this.nodes[id]);
-      const stage = e.target.getStage();
-      var shape = stage.findOne('#circleTree-'+id);
-      this.nodes[id].x = e.target.x(); 
-      this.nodes[id].y = e.target.y(); 
-      // var arr = stage.findOne('#arr-'+1);
-    //  console.log(arr)
-      console.log(this.nodes[id].x)
-      console.log(this.nodes[id].y)
-      console.log(shape.x())
-      console.log(shape.y())
-      // console.log(onEllipse.x())
-      // console.log(shape.x(e.target.x()))
-      // this.$refs.layerTree.batchDraw();
-      // console.log(e.target.getAbsolutePosition().x/ stage.width())
-      // console.log(e.target.getAbsolutePosition().y/ stage.height())
-      // console.log("x"+e.target.x())
-      e.target.getLayer().batchDraw();
-      // for(let i=0; i<this.arrows.length;i++){
-      //   if(this.arrows[i].point1 === e.target.id()){
-
-      //   }
-        
-      // }
-      // console.log(e.target.x())
-    },
-    onclickDrop(option){
-      this.selectedItem = option;
-      console.log("onchange")
-      if(this.selectedItem.trim() === "BFS"){
-        this.labelResult = "Queue";
-        console.log("this works for queue")
-        
-      }
-      else if(this.selectedItem.trim() === "DFS"){
-        this.labelResult = "Stack";
-        
-      }
-    },
-    addingConnection() {
-      this.connection = !this.connection;
-      this.vertex = false;
-      
-    },
-    addingVertex() {
-      this.connection = false;
-      this.vertex = !this.vertex;
+    initializeGrid() {
+      this.grid = Array.from({ length: MAX_NODES }, (unusedRow, row) =>
+        Array.from({ length: MAX_NODES }, (unusedColumn, column) =>
+          this.createEdge(row, column, 0)
+        )
+      );
     },
 
-    clearScreen() {
-
-      console.log("this could work");
-      this.grid= null;
-      this.startNode= null;
-      this.goalNode= null;
-      this.prevStartNode= '';
-      this.prevGoalNode='';
-      this.optionsStartNode=[];   
-      this.list= [];
-      this.edges= [];
-      this.distances= [];
-      this.connection= false;
-      this.vertex= false;
-      this.connections= [];
-      this.drawingLine= false;
-      this.runnableGraph= false;
-      this.selectedItem= "Algorithms";
-      this.coor= "";
-
-      const stage = this.$refs.konva.getStage();
-      // Clear the stage to remove all children and reset properties
-      stage.clear();
-      
-      
-      // this.theStage.clear();
-      this.theStage = []; 
-
-      this.$forceUpdate();
-      // Clear the file reference
-      this.file = null;
-      // Clear the file contents
-      this.fileContents = null;
-      // Revoke the object URL
-      if (this.objectUrl) {
-        URL.revokeObjectURL(this.objectUrl);
-        this.objectUrl = null;
-      }
-      this.initializeGrid();
-     
-
-
+    createEdge(from, to, distance) {
+      return { point1: from, point2: to, distance: Number(distance) || 0 };
     },
-    onFileSelected(event) {
-      this.file = event.target.files[0];
-      let result;
 
-      if (!this.file) {
+    updateStageSize() {
+      this.$nextTick(() => {
+        const container = this.$refs.stageContainer;
+        if (!container) return;
+        this.stageSize = {
+          width: Math.max(container.clientWidth, 280),
+          height: Math.max(container.clientHeight, 420)
+        };
+      });
+    },
+
+    selectAlgorithm(algorithm) {
+      this.selectedAlgorithm = algorithm;
+      this.invalidateSearch(`${algorithm} selected. Ready to visualize.`);
+    },
+
+    toggleVertexMode() {
+      this.cancelDraftConnection();
+      this.vertexMode = !this.vertexMode;
+      this.connectionMode = false;
+      this.statusMessage = this.vertexMode
+        ? "Click the canvas to add a vertex."
+        : "Vertex mode turned off.";
+    },
+
+    toggleConnectionMode() {
+      this.cancelDraftConnection();
+      this.connectionMode = !this.connectionMode;
+      this.vertexMode = false;
+      this.statusMessage = this.connectionMode
+        ? "Drag from one vertex to another to connect them."
+        : "Connection mode turned off.";
+    },
+
+    handleCanvasClick(event) {
+      if (!this.vertexMode || this.list.length >= MAX_NODES) return;
+      const stage = event.target.getStage();
+      if (event.target !== stage) return;
+
+      const position = stage.getPointerPosition();
+      const index = this.list.length;
+      this.list.push({
+        id: `node-${Date.now()}-${index}`,
+        x: position.x,
+        y: position.y,
+        color: COLORS.node
+      });
+      this.invalidateSearch(`Node ${index} added.`);
+    },
+
+    getNodeIndex(target) {
+      const id = target && typeof target.id === "function" ? target.id() : "";
+      if (!id.startsWith("circle-")) return null;
+      const index = Number(id.slice("circle-".length));
+      return Number.isInteger(index) ? index : null;
+    },
+
+    handleMouseDown(event) {
+      if (!this.connectionMode) return;
+      const start = this.getNodeIndex(event.target);
+      if (start === null) return;
+
+      const node = this.list[start];
+      this.drawingLine = true;
+      this.draftStartNode = start;
+      this.connections.push({
+        id: `draft-${Date.now()}`,
+        from: start,
+        to: null,
+        weight: 0,
+        points: [node.x, node.y, node.x, node.y],
+        color: COLORS.edge
+      });
+    },
+
+    handleMouseMove(event) {
+      if (!this.drawingLine) return;
+      const position = event.target.getStage().getPointerPosition();
+      const draft = this.connections[this.connections.length - 1];
+      this.$set(draft, "points", [draft.points[0], draft.points[1], position.x, position.y]);
+    },
+
+    handleMouseUp(event) {
+      if (!this.drawingLine) return;
+
+      const end = this.getNodeIndex(event.target);
+      const start = this.draftStartNode;
+      if (end === null || end === start || this.connectionExists(start, end)) {
+        this.cancelDraftConnection();
+        this.statusMessage = end === start
+          ? "A vertex cannot connect to itself."
+          : "Choose a different, unconnected vertex.";
         return;
       }
-      console.log("this works");
-      this.objectUrl = URL.createObjectURL(this.file);
+
+      const draft = this.connections[this.connections.length - 1];
+      const startPoint = this.list[start];
+      const endPoint = this.list[end];
+      const weight = Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+
+      this.$set(draft, "id", `edge-${Math.min(start, end)}-${Math.max(start, end)}`);
+      this.$set(draft, "to", end);
+      this.$set(draft, "weight", weight);
+      this.$set(draft, "points", [startPoint.x, startPoint.y, endPoint.x, endPoint.y]);
+      this.grid[start][end] = this.createEdge(start, end, weight);
+      this.grid[end][start] = this.createEdge(end, start, weight);
+
+      this.drawingLine = false;
+      this.draftStartNode = null;
+      this.invalidateSearch(`Connected node ${start} to node ${end}.`);
+    },
+
+    cancelDraftConnection() {
+      if (this.drawingLine) this.connections.pop();
+      this.drawingLine = false;
+      this.draftStartNode = null;
+    },
+
+    connectionExists(from, to) {
+      return this.connections.some(connection =>
+        connection.to !== null &&
+        ((connection.from === from && connection.to === to) ||
+          (connection.from === to && connection.to === from))
+      );
+    },
+
+    changeStartNode() {
+      if (this.startNode === this.goalNode) this.goalNode = null;
+      this.invalidateSearch("Start node updated.");
+    },
+
+    changeGoalNode() {
+      this.invalidateSearch("Goal node updated.");
+    },
+
+    invalidateSearch(message) {
+      this.cancelAnimation();
+      this.resetSearchState();
+      this.resetVisuals();
+      if (message) this.statusMessage = message;
+    },
+
+    resetSearchState() {
+      this.visitedNodesInOrder = [];
+      this.calculatedPath = [];
+      this.visitedCount = 0;
+      this.heuristics = [];
+      this.pathHighlighted = false;
+    },
+
+    resetVisuals() {
+      this.list.forEach(node => this.$set(node, "color", COLORS.node));
+      this.connections.forEach(connection => this.$set(connection, "color", COLORS.edge));
+      if (this.list[this.startNode]) this.$set(this.list[this.startNode], "color", COLORS.start);
+      if (this.list[this.goalNode]) this.$set(this.list[this.goalNode], "color", COLORS.goal);
+    },
+
+    createHeuristics(goalNode) {
+      const goal = this.list[goalNode];
+      return this.list.map((node, index) => ({
+        node: index,
+        hval: Math.hypot(goal.x - node.x, goal.y - node.y)
+      }));
+    },
+
+    validateSearch() {
+      if (!this.connections.length) return "Add at least one connection first.";
+      if (this.selectedAlgorithm === DEFAULT_ALGORITHM) return "Select an algorithm first.";
+      if (this.startNode === null || this.goalNode === null) return "Select start and goal nodes first.";
+      return "";
+    },
+
+    runGraph() {
+      const validationMessage = this.validateSearch();
+      if (validationMessage) {
+        this.statusMessage = validationMessage;
+        return;
+      }
+
+      this.cancelAnimation();
+      this.resetSearchState();
+      this.resetVisuals();
+
+      const start = this.grid[this.startNode][this.startNode];
+      const size = this.list.length;
+      this.heuristics = ["Greedy BFS", "A*"].includes(this.selectedAlgorithm)
+        ? this.createHeuristics(this.goalNode)
+        : [];
+
+      const searches = {
+        BFS: () => bfs(this.grid, start, this.goalNode, size),
+        DFS: () => dfs(this.grid, start, this.goalNode, size),
+        "Uniform Cost": () => uniformCost(this.grid, start, this.goalNode, size),
+        "Greedy BFS": () => greedyBFS(this.grid, start, this.goalNode, size, this.heuristics),
+        "A*": () => astar(this.grid, start, this.goalNode, size, this.heuristics)
+      };
+
+      [this.visitedNodesInOrder, this.calculatedPath] = searches[this.selectedAlgorithm]();
+      this.statusMessage = `Running ${this.selectedAlgorithm}…`;
+      this.animateTraversal();
+    },
+
+    animateTraversal() {
+      this.isAnimating = true;
+      const lastIndex = this.visitedNodesInOrder.length - 1;
+
+      for (let index = 1; index <= lastIndex; index += 1) {
+        this.scheduleAnimation(() => this.applyVisitedStep(index), index * VISIT_DELAY_MS);
+      }
+
+      this.scheduleAnimation(() => {
+        this.isAnimating = false;
+        this.visitedCount = Math.max(lastIndex, 0);
+        this.statusMessage = this.calculatedPath.length
+          ? `${this.selectedAlgorithm} reached the goal. Show the shortest path when ready.`
+          : `${this.selectedAlgorithm} finished. No path reaches the goal.`;
+      }, Math.max(lastIndex, 0) * VISIT_DELAY_MS + 80);
+    },
+
+    applyVisitedStep(index) {
+      this.visitedCount = index;
+      this.colorNode(this.visitedNodesInOrder[index], COLORS.visited);
+    },
+
+    colorNode(searchNode, color) {
+      if (!searchNode || !this.list[searchNode.point2]) return;
+      this.$set(this.list[searchNode.point2], "color", color);
+
+      if (searchNode.point1 === searchNode.point2) return;
+      const connection = this.connections.find(line =>
+        (line.from === searchNode.point1 && line.to === searchNode.point2) ||
+        (line.from === searchNode.point2 && line.to === searchNode.point1)
+      );
+      if (connection) this.$set(connection, "color", color);
+    },
+
+    renderTraversalProgress() {
+      this.pathHighlighted = false;
+      this.resetVisuals();
+      for (let index = 1; index <= this.visitedCount; index += 1) {
+        this.colorNode(this.visitedNodesInOrder[index], COLORS.visited);
+      }
+    },
+
+    nextStep() {
+      if (this.cannotPlayNext) return;
+      this.visitedCount += 1;
+      this.renderTraversalProgress();
+    },
+
+    previousStep() {
+      if (this.cannotPlayPrevious) return;
+      this.visitedCount -= 1;
+      this.renderTraversalProgress();
+    },
+
+    getPath() {
+      if (this.cannotShowPath) return;
+      this.isAnimating = true;
+      this.pathHighlighted = false;
+
+      this.calculatedPath.slice(1).forEach((node, index) => {
+        this.scheduleAnimation(() => this.colorNode(node, COLORS.path), index * PATH_DELAY_MS);
+      });
+
+      const duration = Math.max(this.calculatedPath.length - 2, 0) * PATH_DELAY_MS + 80;
+      this.scheduleAnimation(() => {
+        this.isAnimating = false;
+        this.pathHighlighted = true;
+        this.statusMessage = "Shortest path highlighted in red.";
+      }, duration);
+    },
+
+    scheduleAnimation(callback, delay) {
+      const timer = window.setTimeout(() => {
+        this.animationTimers = this.animationTimers.filter(item => item !== timer);
+        callback();
+      }, delay);
+      this.animationTimers.push(timer);
+    },
+
+    cancelAnimation() {
+      this.animationTimers.forEach(timer => window.clearTimeout(timer));
+      this.animationTimers = [];
+      this.isAnimating = false;
+    },
+
+    formatCost(value) {
+      return Number.isFinite(value) ? value.toFixed(1) : "—";
+    },
+
+    chooseFile() {
+      this.$refs.fileUpload.click();
+    },
+
+    onFileSelected(event) {
+      const file = event.target.files[0];
+      if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = (event) => {
-        console.log("readerworks");
-        this.fileContents = event.target.result;
-       
-        result = JSON.parse(this.fileContents);
-        this.grid= result["grid"];
-        this.startNode= result["startNode"];
-        this.goalNode=  result["goalNode"];
-        this.prevStartNode= result["prevStartNode"];
-        this.prevGoalNode= result["prevGoalNode"];
-        this.optionsStartNode= result["optionsStartNode"];   
-        this.list= result["list"];
-        this.edges= result["edges"];
-        this.distances= result["distances"];
-        this.connection= false;
-        this.vertex= true;
-        this.connections= result["connections"];
-        this.drawingLine= result["drawingLine"];
-        this.runnableGraph= result["runnableGraph"];
-        this.selectedItem=  result["selectedItem"];
-        this.coor= result["coor"];
-        this.tableData = result["tableData"];
-        this.theStage = Konva.Node.create(result["theStage"], 'drawArea');
-      
-
-        // this.theStage =new Konva.Stage(result["theStage"], 'drawArea');
-       
-
-        // Perform your desired action with the file contents here
+      reader.onload = loadEvent => {
+        try {
+          this.loadGraph(JSON.parse(loadEvent.target.result));
+          this.statusMessage = `Imported ${file.name}.`;
+        } catch (error) {
+          this.statusMessage = `Could not import graph: ${error.message}`;
+        } finally {
+          event.target.value = "";
+        }
       };
-      reader.readAsText(this.file);
-
-     
-      
-      
+      reader.onerror = () => {
+        this.statusMessage = `Could not read ${file.name}.`;
+        event.target.value = "";
+      };
+      reader.readAsText(file);
     },
 
-    handleClick(evt) {
-      if (this.vertex && this.list.length < 20) {
-        console.log("this works circle");
-        this.optionsStartNode.push(this.list.length);
-        const stage = evt.target.getStage();
-        const pos = stage.getPointerPosition();
-        this.list.push(pos);
-        this.theStage = stage;
-        console.log("list");
-        console.log(this.list);
-      
+    loadGraph(data) {
+      const rawNodes = data.vertices || data.list;
+      if (!Array.isArray(rawNodes) || rawNodes.length > MAX_NODES) {
+        throw new Error(`the file must contain between 0 and ${MAX_NODES} vertices`);
       }
+
+      this.clearScreen(false);
+      this.list = rawNodes.map((node, index) => ({
+        id: `node-${Date.now()}-${index}`,
+        x: Number(node.x),
+        y: Number(node.y),
+        color: COLORS.node
+      }));
+
+      const rawConnections = data.edges || data.connections || [];
+      rawConnections.forEach((connection, index) => {
+        const normalized = this.normalizeImportedConnection(connection, index, data);
+        if (!normalized || this.connectionExists(normalized.from, normalized.to)) return;
+        this.connections.push(normalized);
+        this.grid[normalized.from][normalized.to] = this.createEdge(
+          normalized.from,
+          normalized.to,
+          normalized.weight
+        );
+        this.grid[normalized.to][normalized.from] = this.createEdge(
+          normalized.to,
+          normalized.from,
+          normalized.weight
+        );
+      });
+
+      this.startNode = this.validImportedNode(data.startNode) ? Number(data.startNode) : null;
+      this.goalNode = this.validImportedNode(data.goalNode) && Number(data.goalNode) !== this.startNode
+        ? Number(data.goalNode)
+        : null;
+      const importedAlgorithm = data.selectedAlgorithm || data.selectedItem;
+      const algorithms = [...this.unweightedAlgorithms, ...this.weightedAlgorithms];
+      this.selectedAlgorithm = algorithms.includes(importedAlgorithm) ? importedAlgorithm : DEFAULT_ALGORITHM;
+      this.resetVisuals();
+      this.updateStageSize();
     },
-    chooseFiles() {
-        document.getElementById("fileUpload").click()
+
+    normalizeImportedConnection(connection, index, data) {
+      let from = Number.isInteger(Number(connection.from)) ? Number(connection.from) : null;
+      let to = Number.isInteger(Number(connection.to)) ? Number(connection.to) : null;
+      const points = Array.isArray(connection.points) ? connection.points.map(Number) : [];
+
+      if ((from === null || to === null) && points.length === 4) {
+        from = this.findNodeAt(points[0], points[1]);
+        to = this.findNodeAt(points[2], points[3]);
+      }
+      if (!this.validImportedNode(from) || !this.validImportedNode(to) || from === to) return null;
+
+      const start = this.list[from];
+      const end = this.list[to];
+      const legacyDistance = data.distances && data.distances[index]
+        ? Number(data.distances[index].distance)
+        : 0;
+      const gridDistance = data.grid && data.grid[from] && data.grid[from][to]
+        ? Number(data.grid[from][to].distance)
+        : 0;
+      const weight = Number(connection.weight) || legacyDistance || gridDistance ||
+        Math.hypot(end.x - start.x, end.y - start.y);
+
+      return {
+        id: `edge-${Math.min(from, to)}-${Math.max(from, to)}`,
+        from,
+        to,
+        weight,
+        points: [start.x, start.y, end.x, end.y],
+        color: COLORS.edge
+      };
     },
-    changeColorStart(){
-        var tween;
-       
-        var id = "#circle"+this.startNode;
-        
-        console.log(id);
-        const stage = this.theStage;
-        if (tween) {
-          tween.destroy();
-        }
 
-        console.log(stage);
-       
-        var shape = stage.findOne(id);
-         
-
-       
-
-        if(this.prevStartNode !== ''){
-          console.log(this.prevStartNode);
-          var prevShape = stage.findOne(this.prevStartNode);
-          tween = new Konva.Tween({
-            node: prevShape,
-            fill:"#a20417",
-            stroke:"#a20417"
-          }).play();
-          
-        }
-
-        tween = new Konva.Tween({
-          node: shape,
-          fill:"#2f9c6e",
-          stroke:"#2f9c6e"
-        }).play();
-        
-        this.prevStartNode = id;
-
+    findNodeAt(x, y) {
+      return this.list.findIndex(node => Math.abs(node.x - x) < 0.5 && Math.abs(node.y - y) < 0.5);
     },
-    
-    savefile(){
 
-      let result = {
-        grid: this.grid,
+    validImportedNode(node) {
+      if (node === null || node === undefined || node === "") return false;
+      const index = Number(node);
+      return Number.isInteger(index) && index >= 0 && index < this.list.length;
+    },
+
+    saveFile() {
+      const graph = {
+        version: 2,
+        vertices: this.list.map(node => ({ x: node.x, y: node.y })),
+        edges: this.connections
+          .filter(connection => connection.to !== null)
+          .map(connection => ({
+            from: connection.from,
+            to: connection.to,
+            weight: connection.weight
+          })),
         startNode: this.startNode,
         goalNode: this.goalNode,
-        prevStartNode: this.prevStartNode,
-        prevGoalNode: this.prevGoalNode,
-        optionsStartNode: this.optionsStartNode,   
-        list: this.list,
-        edges: this.edges,
-        distances: this.distances,
-        connection: this.connection,
-        vertex: this.vertex,
-        connections: this.connections,
-        drawing: this.drawingLine,
-        runnableGraph: this.runnableGraph,
-        selectedItem: this.selectedItem,
-        coor: this.coor,
-        theStage: this.theStage,
-        tableData: this.tableData
-      }
-
-     
-      let data = JSON.stringify(result);
-      const blob = new Blob([data], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+        selectedAlgorithm: this.selectedAlgorithm
+      };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(graph, null, 2)], {
+        type: "application/json"
+      }));
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', 'TheGraph.txt'); // Replace with your own filename
+      link.download = "pathfinding-graph.json";
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-
-      const stage = this.$refs.konva.$stage; // Get the Konva stage instance
-      console.log(stage);
+      link.remove();
+      URL.revokeObjectURL(url);
     },
 
-   
-
-    changeColorGoal(){
-        var tween;
-       
-        var id = "#circle"+this.goalNode;
-        console.log(id);
-        const stage = this.theStage;
-
-       
-        var shape = stage.findOne(id);
-         
-
-        if (tween) {
-          tween.destroy();
-        } 
-        
-        if(this.prevGoalNode !== ''){
-          var prevShape = stage.findOne(this.prevGoalNode);
-          tween = new Konva.Tween({
-            node: prevShape,
-            fill:"#a20417",
-            stroke:"#a20417"
-          }).play();
-         
-        }
-
-        tween = new Konva.Tween({
-          node: shape,
-          fill:"#004019",
-          stroke:"#004019"
-        }).play();
-        
-        this.prevGoalNode = id;
-    },
-    handleMouseDown(e) {
-      if (this.connection) {
-        const onCircle = e.target instanceof Konva.Circle;
-        console.log(onCircle.id)
-        if (!onCircle) {
-          return;
-        }
-        this.drawingLine = true;
-        this.connections.push({
-          id: Date.now(),
-          points: [e.target.x(), e.target.y()],
-        });
-      }
-    },
-    handleMouseMove(e) {
-      if (this.connection) {
-        if (!this.drawingLine) {
-          return;
-        }
-        const pos = e.target.getStage().getPointerPosition();
-        const lastLine = this.connections[this.connections.length - 1];
-        lastLine.points = [
-          lastLine.points[0],
-          lastLine.points[1],
-          pos.x,
-          pos.y,
-        ];
-      }
-    },
-    handleMouseUp(e) {
-      if (this.connection) {
-        const onCircle = e.target instanceof Konva.Circle;
-        if (!onCircle) {
-          return;
-        }
-        this.drawingLine = false;
-        const lastLine = this.connections[this.connections.length - 1];
-        const indexOfPoint1 = this.list.findIndex(function (point) {
-          return (
-            point.x === lastLine.points[0] && point.y === lastLine.points[1]
-          );
-        });
-        const indexOfPoint2 = this.list.findIndex(function (point) {
-          return point.x === e.target.x() && point.y === e.target.y();
-        });
-        console.log("Point1 = " + indexOfPoint1 + " Point2 = " + indexOfPoint2);
-        this.tableData[indexOfPoint1+1][indexOfPoint2+1] = 1;
-        this.tableData[indexOfPoint2+1][indexOfPoint1+1] = 1;
-        var dist = Math.sqrt(
-          Math.pow(e.target.x() - lastLine.points[0], 2) +
-            Math.pow(e.target.y() - lastLine.points[1], 2)
-        );
-        this.distances.push({
-          id: Date.now(),
-          distance: dist.toFixed(2),
-          x:
-            Math.min(e.target.x(), lastLine.points[0]) +
-            Math.abs(e.target.x() - lastLine.points[0]) / 2 +
-            4,
-          y:
-            Math.min(e.target.y(), lastLine.points[1]) +
-            Math.abs(e.target.y() - lastLine.points[1]) / 2 +
-            4,
-        });
-       
-        this.grid[indexOfPoint1][indexOfPoint2] = this.createNode(indexOfPoint1, indexOfPoint2, dist.toFixed(2));
-        this.grid[indexOfPoint2][indexOfPoint1] = this.createNode(indexOfPoint2, indexOfPoint1, dist.toFixed(2));
-        console.log("CreatedLines");
-        console.log(this.grid[indexOfPoint1][indexOfPoint2]);
-        console.log(this.grid[indexOfPoint2][indexOfPoint1]);
-      
-        lastLine.id= "line"+indexOfPoint1+indexOfPoint2;
-        lastLine.points = [
-          lastLine.points[0],
-          lastLine.points[1],
-          e.target.x(),
-          e.target.y(),
-        ];
-       
-        if(this.connections.length < 2){
-            this.runnableGraph = true
-        }
-        console.log("after making lines");
-     
-        console.log(this.grid[indexOfPoint1][indexOfPoint2]);
-        console.log(this.grid[indexOfPoint2][indexOfPoint1]);
-        console.log(this.grid);
-     
-
-      }
-     
-
-    },
-    next(){
-      if((this.visitedCount+1)<this.visitedNodesInOrder.length){
-        this.visitedCount += 1;
-        this.colorNode(this.visitedNodesInOrder[this.visitedCount], "#ed81c4");
-        console.log("doing next")
-        console.log(this.visitedNodesInOrder[this.visitedCount]);
-        
-        //adding stack table
-        if(this.selectedItem ==="BFS"){
-          let item = null;
-          const node = this.visitedNodesInOrder[this.visitedCount];
-          // if(this.listNodesTo.includes(node.point1)){
-          //   item = this.listNodesTo.shift();
-          //   this.outputNodes.push(item);
-          // }
-          this.listNodesFrom.push(node.point1);
-          this.listNodesTo.push(node.point2);
-        }
-
-        if(this.selectedItem ==="DFS"){
-          let item = null;
-          const node = this.visitedNodesInOrder[this.visitedCount];
-          // if(this.listNodesTo.includes(node.point1)){
-          //   item = this.listNodesTo.shift();
-          //   this.outputNodes.push(item);
-          // }
-          this.listNodesFrom.push(node.point1);
-          this.listNodesTo.push(node.point2);
-        }
-
-        if(this.selectedItem ==="Uniform Cost"){
-          const node = this.visitedNodesInOrder[this.visitedCount];
-        }
-
-        if(this.selectedItem == "A*"){
-            const node = this.visitedNodesInOrder[this.visitedCount];
-            const myTable = document.getElementById('astartable');
-            // Insert a new row at the end of the table
-            const newRow = myTable.insertRow();
-
-            // Insert cells into the new row
-            const cell1 = newRow.insertCell();
-            const cell2 = newRow.insertCell();
-            const cell3 = newRow.insertCell();
-            const cell4 = newRow.insertCell();
-
-            // Set the content of the cells
-            cell1.textContent = node.point2;
-            cell1.style.border = '1px solid gray';
-            cell2.textContent = (node.cost.H).toFixed(2);
-            cell2.style.border = '1px solid gray';
-            cell2.style.padding = '0px 8px';
-            cell3.textContent = (node.cost.G).toFixed(2);
-            cell3.style.border = '1px solid gray';
-            cell3.style.padding = '0px 8px';
-            cell4.textContent = (node.cost.F).toFixed(2);
-            cell4.style.border = '1px solid gray';
-        }
-        
-      }
-      if(this.visitedCount >= 1)
-        this.cantPlayPrev = false;
-      if(this.visitedCount == this.visitedNodesInOrder.length-1){
-        this.cantPlayNext = true;
-        this.cantrunShortPath = false;
-      }
-      
-        
-      
-    },
-    prev(){
-      if((this.visitedCount-1) >= 0){
-        this.undoColorNode();
-        this.visitedCount -= 1;
-        //adding stack table
-        if(this.selectedItem ==="BFS"){
-          let item = null;
-          const node = this.visitedNodesInOrder[this.visitedCount];
-          // if(this.listNodesTo.includes(node.point1)){
-          //   item = this.listNodesTo.shift();
-          //   this.outputNodes.push(item);
-          // }
-          this.listNodesFrom.pop(node.point1);
-          this.listNodesTo.pop(node.point2);
-        }
-
-        if(this.selectedItem ==="DFS"){
-          let item = null;
-          const node = this.visitedNodesInOrder[this.visitedCount];
-          // if(this.listNodesTo.includes(node.point1)){
-          //   item = this.listNodesTo.shift();
-          //   this.outputNodes.pop(item);
-          // }
-          this.listNodesFrom.pop(node.point1);
-          this.listNodesTo.pop(node.point2);
-        }
-
-        if(this.selectedItem == "A*"){
-          var table = document.getElementById("astartable");
-
-          // Get the index of the last row
-          var lastRowIndex = table.rows.length - 1;
-
-          // Delete the last row
-          table.deleteRow(lastRowIndex);
-        }
-
-      }
-      if(this.visitedCount == 0)
-        this.cantPlayPrev = true;
-
-      if(this.visitedCount < this.visitedNodesInOrder.length-1){
-        this.cantPlayNext = false;
-        this.cantrunShortPath = true;
-
-      }
-    },
-
- 
-    createHeuristic(node){
-       const size = this.list.length;
-       const endNode= this.list[node];
-       console.log("doing the end node")
-       console.log(endNode);
-       let heuristic = [];
-       
-
-       for(let i =0; i < size; i++){
-         var dist = Math.sqrt(
-            Math.pow(endNode.x - this.list[i].x, 2) +
-              Math.pow(endNode.y - this.list[i].y, 2)
-          );
-         heuristic.push({node: i, hval: dist});
-       }
-
-       return heuristic;
-
-    },
-    initializeGrid(){
-      const grid = [];
-      for (let row = 0; row < 10; row++) {
-        const currentRow = [];
-        for (let col = 0; col < 10; col++) {
-          currentRow.push(this.createNode(row, col, 0));
-        }
-        grid.push(currentRow);
-      }
-      this.grid = grid;
-      console.log('This is the Initialized Grid');
-      console.log(this.grid);
-    },
-
-    //
-    createNode(x, y, dist){
-      return {
-        point1: x,
-        point2: y,
-        distance: dist,
-        isVisited: false,
-        previousNode: null,
-        cost: {
-                F: Infinity,
-                G: Infinity,
-                H: Infinity,
-            },
-      }
-
-    },
-    
-    animateAlgorithm(visitedNodesInOrder, nodesInShortestPathOrder) {
-      
-      
-      for (let i = 1; i < visitedNodesInOrder.length; i++) {
-        
-          setTimeout(() => {
-                this.colorNode(visitedNodesInOrder[i], "#ed81c4");
-          }, i*800);
-         
-
-        }
-        setTimeout(() => {
-                this.animateShortestPath(nodesInShortestPathOrder);
-        }, visitedNodesInOrder.length*800);
-        
-    },
-
-  colorNode(visitedNode, color){
-          let stage = this.theStage;
-
-          var connections = this.connections;
-          const node = visitedNode;
-
-          var idCircle = "#circle"+node.point2;
-          console.log(idCircle);
-          var shape = stage.findOne(idCircle);
-          
-
-          
-          var idLine = "line"+node.point1+node.point2;
-          var idLine2 = "line"+node.point2+node.point1;
-          let idL =connections.filter(line => line.id === idLine|| line.id === idLine2);
-
-        
-          var idOfLine = "#"+idL[0].id;
-          var line = stage.findOne(idOfLine);
-
-        
-          var tweenLine = new Konva.Tween({
-              node: line,
-              
-              fill:color,
-              stroke:color
-          }).play();
-          console.log("Line is working");
-          
-          var tweenShape = new Konva.Tween({
-            node: shape,
-        
-            fill:color,
-            stroke:color
-          }).play();
-         
-         console.log("Shape is working");
-  },
-
-  undoColorNode( color){
-          let stage = this.theStage;
-          
-          // let prevNode = this.visitedNodesInOrder[this.visitedCount-1]
-          let visitedNode = this.visitedNodesInOrder[this.visitedCount]
-         
-
-          
-          var connections = this.connections;
-          const node = visitedNode;
-
-          var idCircle = "#circle"+node.point2;
-          console.log(idCircle);
-          var shape = stage.findOne(idCircle);
-          
-
-          
-          var idLine = "line"+node.point1+node.point2;
-          var idLine2 = "line"+node.point2+node.point1;
-          let idL =connections.filter(line => line.id === idLine|| line.id === idLine2);
-
-        
-          var idOfLine = "#"+idL[0].id;
-          var line = stage.findOne(idOfLine);
-
-        
-          var tweenLine = new Konva.Tween({
-              node: line,
-              stroke: 'black',
-          }).play();
-          console.log("Line is working");
-          
-          var tweenShape = new Konva.Tween({
-            node: shape,
-        
-            fill: '#a20417',
-             //draggable:true,
-            stroke: '#a20417',
-          }).play();
-         
-         console.log("Shape is working");
-        
-  },
-
-  animateShortestPath(nodesInShortestPathOrder) {
-    
-    for (let i = 1; i < nodesInShortestPathOrder.length; i++) {
-          
-          setTimeout(() => {
-                this.colorNode(nodesInShortestPathOrder[i], "#ed4255");
-          }, i*500);
-       
+    clearScreen(showMessage = true) {
+      const shouldShowMessage = typeof showMessage === "boolean" ? showMessage : true;
+      this.cancelAnimation();
+      this.cancelDraftConnection();
+      this.list = [];
+      this.connections = [];
+      this.startNode = null;
+      this.goalNode = null;
+      this.vertexMode = false;
+      this.connectionMode = false;
+      this.selectedAlgorithm = DEFAULT_ALGORITHM;
+      this.initializeGrid();
+      this.resetSearchState();
+      if (this.$refs.fileUpload) this.$refs.fileUpload.value = "";
+      if (shouldShowMessage) this.statusMessage = "Graph cleared. Add a vertex to start again.";
     }
-  },
-  getPath(){
-    this.cantPlayPrev = false;
-    if(this.selectedItem ==="BFS"||this.selectedItem ==="DFS"){
-      var table = document.getElementById("resTable");
-      // Get an array of all the td elements in the table
-      var tds = table.getElementsByTagName("td");
-    }
-
-    for (let i = this.calculatedPath.length-1; i >= 1; i--) {
-      let node = this.calculatedPath[i];
-      
-      this.outputNodesFrom.push(node.point1);
-      this.outputNodesTo.push(node.point2);
-
-      if(this.selectedItem ==="BFS"){
-        let resIndex = this.listNodesFrom.indexOf(node.point1)+1;
-        table.rows[0].cells[resIndex].style.backgroundColor = "#ed4255";
-        table.rows[1].cells[resIndex].style.backgroundColor = "#ed4255";
-      }
-      if(this.selectedItem ==="DFS"){
-        let resIndex = this.listNodesTo.indexOf(node.point2)+1;
-        table.rows[0].cells[resIndex].style.backgroundColor = "#ed4255";
-        table.rows[1].cells[resIndex].style.backgroundColor = "#ed4255";
-      }
-       
-    }
-
-    for (let i = this.calculatedPath.length-1; i >= 1; i--) {
-          
-          setTimeout(() => {
-                this.colorNode(this.calculatedPath[i], "#ed4255");
-          }, i*500);
-       
-    }
-  },
-    visualizeBFS(){
-       const STARTNODE = this.grid[this.startNode][this.startNode];
-       const GOALNODE = this.goalNode;
-       const size = this.list.length;
-       return bfs(this.grid, STARTNODE, GOALNODE, size);
-       
-      
-    },
-    visualizeDFS(){
-       const STARTNODE = this.grid[this.startNode][this.startNode];
-       const GOALNODE = this.goalNode;
-       const size = this.list.length;
-       return dfs(this.grid, STARTNODE, GOALNODE, size);
-      
-      
-    },
-    visualizeAStar(){
-       const STARTNODE = this.grid[this.startNode][this.startNode];
-       const GOALNODE = this.goalNode;
-       const size = this.list.length;
-       const heuristic = this.createHeuristic(GOALNODE);
-       console.log("the heuristic chuchu")
-       console.log(heuristic)
-       console.log("the distance bet us")
-       console.log(this.distances);
-
-      const myDiv = document.getElementById('astar');
-
-        // Create a new table element
-      const myTable = document.createElement('table');
-      
-
-
-      // Create a header row
-      const headerRow = myTable.insertRow();
-      const headerCell1 = headerRow.insertCell();
-      const headerCell2 = headerRow.insertCell();
-      headerCell1.textContent = 'Nodes #';
-      headerCell2.textContent = 'Heuristic';
-
-
-      for (const item of heuristic) {
-        const row = myTable.insertRow();
-        const cell1 = row.insertCell();
-        const cell2 = row.insertCell();
-        cell1.textContent = item.node;
-        cell1.style.border = '1px solid gray';
-        cell2.textContent = (item.hval).toFixed(2);
-        cell2.style.border = '1px solid gray';
-        cell2.style.padding = '3px 10px';
-
-      }
-
-      // Append the table element to the div
-      myDiv.appendChild(myTable);
-
-      const otherTable = document.createElement('table');
-      otherTable.setAttribute('id', 'astartable');
-      // Create a header row
-      const headerRowo = otherTable.insertRow();
-      const headerCell1o = headerRowo.insertCell();
-      const headerCell2o = headerRowo.insertCell();
-      const headerCell3o = headerRowo.insertCell();
-      const headerCell4o = headerRowo.insertCell();
-      headerCell1o.textContent = 'Nodes #';
-      headerCell2o.textContent = 'H cost';
-      headerCell3o.textContent = 'G cost';
-      headerCell4o.textContent = 'F cost (H+G)';
-
-      otherTable.id = 'astartable';
-      otherTable.style.marginTop = '10px';
-
-      myDiv.appendChild(otherTable);
-
-       return astar(this.grid, STARTNODE, GOALNODE, size, heuristic, this.distances);
-
-    },
-    visualizeGreedyBFS(){
-       const STARTNODE = this.grid[this.startNode][this.startNode];
-       const GOALNODE = this.goalNode;
-       const size = this.list.length;
-       const heuristic = this.createHeuristic(GOALNODE);
-
-
-       console.log("the heuristic chuchu")
-       console.log(heuristic)
-
-      const myDiv = document.getElementById('heuristic');
-
-        // Create a new table element
-      const myTable = document.createElement('table');
-
-      // Create a header row
-      const headerRow = myTable.insertRow();
-      const headerCell1 = headerRow.insertCell();
-      const headerCell2 = headerRow.insertCell();
-      headerCell1.textContent = 'Nodes #';
-      headerCell2.textContent = 'Heuristic';
-
-
-      for (const item of heuristic) {
-        const row = myTable.insertRow();
-        const cell1 = row.insertCell();
-        const cell2 = row.insertCell();
-        cell1.textContent = item.node;
-        cell1.style.border = '1px solid gray';
-        cell2.textContent = item.hval;
-        cell2.style.border = '1px solid gray';
-        cell2.style.padding = '3px';
-
-      }
-
-      // Append the table element to the div
-      myDiv.appendChild(myTable);
-
-      return greedyBFS(this.grid, STARTNODE, GOALNODE, size, heuristic );
-      
-    },
-    visualizeUniformCost(){
-       const STARTNODE = this.grid[this.startNode][this.startNode];
-       const GOALNODE = this.goalNode;
-       const size = this.list.length;
-       const heuristic = this.createHeuristic(GOALNODE);
-       return uniformCost(this.grid, STARTNODE, GOALNODE, size, heuristic );
- 
-    },
-  
-    runGraph(){
-       
-       if(this.runnableGraph && this.selectedItem.trim()!=="Algorithms") {
-          
-          const item = this.selectedItem;
-          if(item === "BFS"){
-            [this.visitedNodesInOrder, this.calculatedPath] = this.visualizeBFS();
-          }
-          else if(item === "DFS"){
-            [this.visitedNodesInOrder, this.calculatedPath] = this.visualizeDFS();
-          }
-          else if (item === "A*"){
-            [this.visitedNodesInOrder, this.calculatedPath] =this.visualizeAStar();
-          }
-          else if (item === "Greedy BFS"){
-            [this.visitedNodesInOrder, this.calculatedPath] = this.visualizeGreedyBFS();
-          }
-          else if (item === "Uniform Cost"){
-            [this.visitedNodesInOrder, this.calculatedPath] = this.visualizeUniformCost();
-          }
-
-          // this.animateAlgorithm(this.visitedNodesInOrder, this.calculatedPath);
-          console.log("this is in run graphe");
-          console.log(this.visitedNodesInOrder)
-          console.log(this.calculatedPath)
-          this.cantPlayNext = false;
-
-       }
-    },
-
   }
-
-}
+};
 </script>

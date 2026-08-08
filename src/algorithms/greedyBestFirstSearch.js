@@ -1,68 +1,39 @@
+import {
+  createSearchNode,
+  emptySearchResult,
+  getNeighbors,
+  heuristicByNode,
+  reconstructPath
+} from "./searchHelpers";
+
 export function greedyBFS(grid, startNode, finishNode, size, heuristic) {
-  const closedlist = [];
-  const openlist = [];
+  const heuristicMap = heuristicByNode(heuristic);
+  const start = createSearchNode(startNode);
+  start.cost = { F: heuristicMap.get(start.point2), G: 0, H: heuristicMap.get(start.point2) };
 
-  const startH = heuristic.find((h) => h.node === startNode.point2);
-  startNode.cost = {
-    F: 0,
-    G: 0,
-    H: startH.hval
-  };
+  const frontier = [start];
+  const discovered = new Set([start.point2]);
+  const visitedNodesInOrder = [];
 
-  openlist.push(startNode);
+  while (frontier.length) {
+    frontier.sort((a, b) => a.cost.H - b.cost.H || a.point2 - b.point2);
+    const current = frontier.shift();
+    visitedNodesInOrder.push(current);
 
-  while (openlist.length>0) {
-    openlist.sort((a, b) => a.cost.H - b.cost.H);
-    const current = openlist.shift();
+    if (current.point2 === finishNode) {
+      return [visitedNodesInOrder, reconstructPath(current)];
+    }
 
-    closedlist.push(current);
+    for (const edge of getNeighbors(grid, current.point2, size)) {
+      if (discovered.has(edge.point2)) continue;
 
-    if (current.point2 === finishNode)
-      return [closedlist, calculatePath(current)];
-
-    const neighbors = getAllNeighbors(grid, current, size);
-
-    for (let i = 0; i < neighbors.length; i++) {
-      const nNode = neighbors[i];
-      const hNode = heuristic.find((h) => h.node === nNode.point2);
-      nNode.isVisited = true;
-      if (closedlist.includes(nNode)) continue;
-
-      //Calculate Cost H computes the heuristics of the node  (distance between node and distance)
-      nNode.cost.H = hNode.hval;
-      //Addition of the node heuristics and distance cost
-      nNode.cost.F = nNode.cost.H;
-
-      if (!openlist.includes(nNode)) {
-        nNode.previousNode = current;
-        openlist.push(nNode);
-      }
+      const neighbor = createSearchNode(edge, current);
+      const hCost = heuristicMap.get(neighbor.point2);
+      neighbor.cost = { F: hCost, G: current.cost.G + neighbor.distance, H: hCost };
+      discovered.add(neighbor.point2);
+      frontier.push(neighbor);
     }
   }
-  return [closedlist, calculatePath(finishNode)];
-}
 
-function getAllNeighbors(grid, node, size) {
-  const neighbors = [];
-  const point2 = node.point2;
-
-  for (let i = 0; i < size; i++) {
-    var tempNode = grid[point2][i];
-    if (!tempNode.isVisited && tempNode.distance > 0) {
-      grid[i][point2].isVisited = true;
-
-      neighbors.push(tempNode);
-    }
-  }
-  return neighbors;
-}
-
-function calculatePath(finishNode) {
-  const shortestPathNodes = [];
-  let currentNode = finishNode;
-  while (currentNode !== null) {
-    shortestPathNodes.unshift(currentNode);
-    currentNode = currentNode.previousNode;
-  }
-  return shortestPathNodes;
+  return emptySearchResult(visitedNodesInOrder);
 }
